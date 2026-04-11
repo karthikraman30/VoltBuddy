@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ChargePet - Interactive Asset Sandbox v2</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f9a215",
+                        "rpg-text": "#3D405B",
+                        "rpg-accent": "#2A9D8F",
+                        "rpg-bg": "#F4F1DE",
+                        "rpg-surface": "#81B29A",
+                        "rpg-muted": "#E07A5F",
+                        "rpg-gold": "#FACC15",
+                        "rpg-silver": "#9CA3AF",
+                        "rpg-royal": "#6B21A8",
+                        "rpg-duke": "#991B1B"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'hard': '4px 4px 0px #3D405B',
+                        'hard-sm': '2px 2px 0px #3D405B',
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #F4F1DE;
+            color: #3D405B;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+        .border-thick { border: 4px solid #3D405B; }
+        .btn-press:active { transform: translateY(4px); box-shadow: none !important; }
+
+        /* Base Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float { animation: float 3s infinite ease-in-out; }
+
+        @keyframes pulse-aura {
+            0% { transform: scale(0.95); opacity: 0.4; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(0.95); opacity: 0.4; }
+        }
+        .pulse-aura { animation: pulse-aura 4s infinite ease-in-out; }
+
+        /* Interaction Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px) rotate(-2deg); }
+            40%, 80% { transform: translateX(5px) rotate(2deg); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+
+        @keyframes bounce-up {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.05); }
+        }
+        .animate-bounce-up { animation: bounce-up 0.5s ease-out; }
+
+        @keyframes level-up-flash {
+            0% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(2) drop-shadow(0 0 20px #FACC15); transform: scale(1.2); }
+            100% { filter: brightness(1); transform: scale(1); }
+        }
+        .animate-level-up { animation: level-up-flash 0.8s ease-in-out; }
+
+        @keyframes float-up-fade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.2); }
+        }
+        .floating-text {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 0px #3D405B;
+            pointer-events: none;
+            animation: float-up-fade 1s forwards;
+            z-index: 50;
+        }
+
+        /* Health States */
+        .state-thriving .cat-body { filter: none; }
+        .state-tired .cat-body { filter: grayscale(40%) brightness(0.9); animation: none; transform: translateY(5px); }
+        .state-sick .cat-body { filter: grayscale(70%) sepia(50%) hue-rotate(-50deg) saturate(3); animation: shake 2s infinite; }
+        .state-sick .pulse-aura { background-color: #E07A5F !important; animation-duration: 1s; }
+
+        /* --- SPECIES MORPHING LOGIC --- */
+
+        /* 1. CAT (Pointy Ears, Small Snout) */
+        .species-cat #ear-l { top: -12px; left: -8px; width: 40px; height: 40px; border-radius: 1rem 0 0 0; transform: rotate(-12deg); }
+        .species-cat #ear-r { top: -12px; right: -8px; width: 40px; height: 40px; border-radius: 0 1rem 0 0; transform: rotate(12deg); }
+        .species-cat #snout { width: 12px; height: 8px; border-radius: 999px; }
+
+        /* 2. DOG (Floppy Ears, Wider Snout) */
+        .species-dog #ear-l { top: 10px; left: -15px; width: 32px; height: 48px; border-radius: 2rem 0 2rem 2rem; transform: rotate(15deg); }
+        .species-dog #ear-r { top: 10px; right: -15px; width: 32px; height: 48px; border-radius: 0 2rem 2rem 2rem; transform: rotate(-15deg); }
+        .species-dog #snout { width: 24px; height: 14px; border-radius: 8px; }
+
+        /* 3. RABBIT (Tall Vertical Ears, Tiny Snout) */
+        .species-rabbit #ear-l { top: -45px; left: 10px; width: 20px; height: 70px; border-radius: 2rem 2rem 0 0; transform: rotate(-5deg); }
+        .species-rabbit #ear-r { top: -45px; right: 10px; width: 20px; height: 70px; border-radius: 2rem 2rem 0 0; transform: rotate(5deg); }
+        .species-rabbit #snout { width: 8px; height: 6px; border-radius: 50%; }
+
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col max-w-md mx-auto border-x-4 border-rpg-text">
+
+    <!-- Header Stats -->
+    <header class="sticky top-0 z-20 bg-rpg-bg border-b-4 border-rpg-text p-4 flex justify-between items-center shadow-[0_4px_0_#3D405B]">
+        <div class="flex items-center bg-white border-thick rounded-xl px-3 py-1 shadow-hard-sm transition-all" id="lvl-badge">
+            <span class="material-symbols-outlined text-primary mr-1" style="font-variation-settings: 'FILL' 1;">star</span>
+            <span class="font-bold" id="header-lvl">RANK 1</span>
+        </div>
+
+        <div class="flex items-center bg-white border-thick rounded-xl px-3 py-1 shadow-hard-sm">
+            <span class="material-symbols-outlined text-primary mr-1" style="font-variation-settings: 'FILL' 1;">monetization_on</span>
+            <span class="font-bold" id="header-gold">120g</span>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 flex flex-col items-center justify-start p-6 gap-6 relative overflow-hidden bg-rpg-bg">
+
+        <!-- Pet Stage -->
+        <div id="pet-stage" class="relative flex flex-col items-center w-full mt-4 state-thriving">
+
+            <div id="pet-aura" class="absolute w-64 h-64 bg-rpg-accent/30 rounded-full blur-2xl pulse-aura -z-10 transition-colors duration-500"></div>
+
+            <!-- Dynamic CSS Avatar -->
+            <div id="cat-container" class="cat-body relative w-40 h-40 animate-float transition-all duration-300 flex items-center justify-center species-cat">
+
+                <!-- Base Head -->
+                <div class="absolute inset-0 bg-primary rounded-full border-thick shadow-hard z-10 overflow-hidden flex flex-col items-center justify-center transition-colors">
+                    <!-- Eyes -->
+                    <div class="flex gap-4 mb-2 z-20">
+                        <div id="eye-l" class="w-3 h-4 bg-rpg-text rounded-full transition-all"></div>
+                        <div id="eye-r" class="w-3 h-4 bg-rpg-text rounded-full transition-all"></div>
+                    </div>
+                    <!-- Mouth/Nose morph -->
+                    <div class="flex flex-col items-center z-20">
+                        <div id="snout" class="bg-rpg-text transition-all duration-300"></div>
+                        <div id="mouth" class="w-4 h-4 border-b-4 border-rpg-text rounded-full -mt-1 transition-all"></div>
+                    </div>
+                    <!-- Stripes (Fade out on non-cats) -->
+                    <div id="stripes" class="absolute top-2 flex gap-2 opacity-30 transition-opacity">
+                        <div class="w-1.5 h-6 bg-rpg-text rounded-full"></div>
+                        <div class="w-1.5 h-8 bg-rpg-text rounded-full"></div>
+                        <div class="w-1.5 h-6 bg-rpg-text rounded-full"></div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Ears -->
+                <div id="ear-l" class="absolute bg-primary border-thick z-0 transition-all duration-300"></div>
+                <div id="ear-r" class="absolute bg-primary border-thick z-0 transition-all duration-300"></div>
+
+                <!-- DYNAMIC EQUIPMENT BATCHES -->
+                <div id="equipment" class="absolute inset-0 z-30 pointer-events-none transition-all duration-300">
+
+                    <!-- BATCH 1: Peasant / Recruit -->
+                    <div id="eq-batch-1" class="absolute inset-0 block">
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-12 bg-[#8B5A2B] border-thick rounded-b-full"></div>
+                    </div>
+
+                    <!-- BATCH 2: Soldier / Roman -->
+                    <div id="eq-batch-2" class="absolute inset-0 hidden">
+                        <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-36 h-16 bg-rpg-silver border-thick rounded-t-full"></div>
+                        <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-8 h-10 bg-rpg-muted border-thick rounded-t-full"></div>
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-36 h-12 bg-rpg-text border-thick rounded-b-full flex justify-center gap-1">
+                            <div class="w-2 h-full bg-rpg-silver"></div>
+                            <div class="w-2 h-full bg-rpg-silver"></div>
+                        </div>
+                    </div>
+
+                    <!-- BATCH 3: Knight / Commander -->
+                    <div id="eq-batch-3" class="absolute inset-0 hidden">
+                        <div class="absolute top-6 left-1/2 -translate-x-1/2 w-32 h-14 bg-rpg-silver border-thick rounded-xl flex items-center justify-center gap-2">
+                            <div class="w-16 h-2 bg-rpg-text"></div>
+                        </div>
+                        <div class="absolute -bottom-4 -left-6 w-12 h-24 bg-rpg-surface border-thick rounded-l-full -z-10"></div>
+                        <div class="absolute -bottom-4 -right-6 w-12 h-24 bg-rpg-surface border-thick rounded-r-full -z-10"></div>
+                    </div>
+
+                    <!-- BATCH 4: Duke / Marshal -->
+                    <div id="eq-batch-4" class="absolute inset-0 hidden">
+                        <!-- Fancy Helm -->
+                        <div class="absolute top-2 left-1/2 -translate-x-1/2 w-[130px] h-[60px] bg-rpg-gold border-thick rounded-t-2xl flex justify-center">
+                            <div class="w-4 h-8 bg-white border-thick rounded-t-full -mt-4"></div>
+                        </div>
+                        <!-- Huge Cape -->
+                        <div class="absolute -bottom-6 -left-8 w-16 h-28 bg-rpg-duke border-thick rounded-l-full -z-10"></div>
+                        <div class="absolute -bottom-6 -right-8 w-16 h-28 bg-rpg-duke border-thick rounded-r-full -z-10"></div>
+                        <!-- Chest Plate -->
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[140px] h-[50px] bg-rpg-silver border-thick rounded-b-full flex items-center justify-center">
+                            <div class="w-8 h-8 bg-rpg-gold border-thick rounded-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- BATCH 5: King / Emperor -->
+                    <div id="eq-batch-5" class="absolute inset-0 hidden">
+                        <!-- Crown -->
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 flex items-end">
+                            <div class="w-8 h-12 bg-rpg-gold border-thick transform skew-x-12 rounded-t-md"></div>
+                            <div class="w-10 h-16 bg-rpg-gold border-thick -mx-2 rounded-t-md z-10"></div>
+                            <div class="w-8 h-12 bg-rpg-gold border-thick transform -skew-x-12 rounded-t-md"></div>
+                        </div>
+                        <!-- Royal Robe -->
+                        <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-44 h-16 bg-rpg-royal border-thick rounded-b-full flex justify-between px-2">
+                            <div class="w-6 h-full bg-white border-x-4 border-rpg-text border-dotted"></div>
+                            <div class="w-6 h-full bg-white border-x-4 border-rpg-text border-dotted"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Target Asset Label -->
+            <div class="mt-8 text-center flex flex-col items-center">
+                <div id="asset-label" class="bg-rpg-text text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-1">
+                    Asset: Miles Cat (Batch 1)
+                </div>
+                <h2 id="pet-name" class="text-3xl font-bold uppercase tracking-tighter">Sparky</h2>
+                <div id="status-badge" class="bg-rpg-accent border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase mt-1 transition-colors">
+                    Status: Thriving
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bars -->
+        <div class="w-full space-y-4">
+            <div class="w-full flex flex-col gap-1">
+                <div class="flex justify-between font-bold text-sm uppercase">
+                    <span>Battery Health (HP)</span>
+                    <span id="hp-text">100/100</span>
+                </div>
+                <div class="w-full h-6 bg-white border-thick rounded-full overflow-hidden shadow-hard-sm">
+                    <div id="hp-bar" class="h-full bg-rpg-accent w-full border-r-4 border-rpg-text transition-all duration-500"></div>
+                </div>
+            </div>
+
+            <div class="w-full flex flex-col gap-1">
+                <div class="flex justify-between font-bold text-sm uppercase text-rpg-text/60">
+                    <span>Exp to Rank Up</span>
+                    <span id="xp-text">0 / 100</span>
+                </div>
+                <div class="w-full h-3 bg-white border-thick rounded-full overflow-hidden shadow-hard-sm">
+                    <div id="xp-bar" class="h-full bg-primary w-[0%] border-r-2 border-rpg-text transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- DEV DASHBOARD: INTERACTION SHOWCASE -->
+    <section class="bg-white border-t-4 border-rpg-text p-4 pb-8 flex flex-col gap-4 relative z-30 shadow-[0_-4px_0_#3D405B]">
+        <div class="flex items-center gap-2 mb-2">
+            <span class="material-symbols-outlined text-rpg-text">science</span>
+            <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">Dev Sandbox</h3>
+        </div>
+
+        <!-- Species Selection -->
+        <div class="flex flex-col gap-2 border-b-2 border-rpg-text/10 pb-4">
+            <h4 class="font-bold text-xs uppercase text-rpg-text/60">Choose Pet Species</h4>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="setSpecies('cat')" class="bg-white border-2 border-rpg-text rounded-xl p-2 font-bold text-xs uppercase shadow-hard-sm btn-press active:bg-primary/20">🐱 Cat</button>
+                <button onclick="setSpecies('dog')" class="bg-white border-2 border-rpg-text rounded-xl p-2 font-bold text-xs uppercase shadow-hard-sm btn-press active:bg-primary/20">🐶 Dog</button>
+                <button onclick="setSpecies('rabbit')" class="bg-white border-2 border-rpg-text rounded-xl p-2 font-bold text-xs uppercase shadow-hard-sm btn-press active:bg-primary/20">🐰 Rabbit</button>
+            </div>
+        </div>
+
+        <!-- Rank Selection -->
+        <div class="flex flex-col gap-2 border-b-2 border-rpg-text/10 pb-4">
+            <h4 class="font-bold text-xs uppercase text-rpg-text/60">20-Tier Rank Progression</h4>
+            <select id="rank-select" onchange="setRank(this.value)" class="w-full border-2 border-rpg-text rounded-xl p-3 font-bold text-sm shadow-hard-sm focus:ring-0 focus:outline-none">
+                <!-- Populated via JS -->
+            </select>
+        </div>
+
+        <!-- Actions & States -->
+        <div class="grid grid-cols-2 gap-3 mb-2">
+            <button onclick="triggerInteraction('good_charge')" class="bg-rpg-surface border-thick rounded-xl p-3 shadow-hard btn-press flex flex-col items-center text-white">
+                <span class="material-symbols-outlined mb-1">battery_charging_full</span>
+                <span class="font-bold uppercase text-[10px]">Good Charge (+XP)</span>
+            </button>
+            <button onclick="triggerInteraction('overcharge')" class="bg-rpg-muted border-thick rounded-xl p-3 shadow-hard btn-press flex flex-col items-center text-white">
+                <span class="material-symbols-outlined mb-1">battery_alert</span>
+                <span class="font-bold uppercase text-[10px]">Overcharge (-HP)</span>
+            </button>
+        </div>
+
+        <div class="flex gap-2 justify-center">
+            <button onclick="forceHealthState('thriving')" class="bg-white border-2 border-rpg-text rounded-lg px-3 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press">Thriving</button>
+            <button onclick="forceHealthState('tired')" class="bg-white border-2 border-rpg-text rounded-lg px-3 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press">Tired</button>
+            <button onclick="forceHealthState('sick')" class="bg-white border-2 border-rpg-text rounded-lg px-3 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press">Sick</button>
+        </div>
+    </section>
+
+    <script>
+        // Data Arrays
+        const ranks = [
+            { id: 1, name: "Miles", batch: 1 },
+            { id: 2, name: "Decanus", batch: 1 },
+            { id: 3, name: "Optio", batch: 1 },
+            { id: 4, name: "Centurion", batch: 1 },
+            { id: 5, name: "Primus Pilus", batch: 1 },
+            { id: 6, name: "Squire", batch: 1 },
+            { id: 7, name: "Knight Bachelor", batch: 2 },
+            { id: 8, name: "Knight Banneret", batch: 2 },
+            { id: 9, name: "Prefect", batch: 2 },
+            { id: 10, name: "Tribune", batch: 2 },
+            { id: 11, name: "Hazarapatis", batch: 3 },
+            { id: 12, name: "Castellan", batch: 3 },
+            { id: 13, name: "Legatus Legionis", batch: 3 },
+            { id: 14, name: "Baivarapatis", batch: 3 },
+            { id: 15, name: "Baron/Lord", batch: 4 },
+            { id: 16, name: "Earl/Count", batch: 4 },
+            { id: 17, name: "Duke", batch: 4 },
+            { id: 18, name: "Marshal", batch: 4 },
+            { id: 19, name: "Grand Master", batch: 5 },
+            { id: 20, name: "King/Emperor", batch: 5 }
+        ];
+
+        // State Variables
+        let hp = 100;
+        let xp = 0;
+        let currentRankIndex = 0; // 0 to 19
+        let currentSpecies = 'cat'; // cat, dog, rabbit
+
+        // DOM Elements
+        const stage = document.getElementById('pet-stage');
+        const catContainer = document.getElementById('cat-container');
+        const hpBar = document.getElementById('hp-bar');
+        const hpText = document.getElementById('hp-text');
+        const xpBar = document.getElementById('xp-bar');
+        const xpText = document.getElementById('xp-text');
+        const statusBadge = document.getElementById('status-badge');
+        const assetLabel = document.getElementById('asset-label');
+        const headerLvl = document.getElementById('header-lvl');
+        const aura = document.getElementById('pet-aura');
+        const rankSelect = document.getElementById('rank-select');
+        const stripes = document.getElementById('stripes');
+
+        // Initialization
+        function init() {
+            // Populate select box
+            ranks.forEach((r, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.text = `${r.id}. ${r.name} (Batch ${r.batch})`;
+                rankSelect.appendChild(opt);
+            });
+            updateUI();
+        }
+
+        // --- CORE LOGIC --- //
+
+        function setSpecies(species) {
+            currentSpecies = species;
+
+            // Swap classes to trigger CSS geometry changes
+            catContainer.classList.remove('species-cat', 'species-dog', 'species-rabbit');
+            catContainer.classList.add(`species-${species}`);
+
+            // Toggle Cat Stripes visibility
+            stripes.style.opacity = species === 'cat' ? '0.3' : '0';
+
+            // Flash effect to hide transition slightly
+            catContainer.classList.add('animate-level-up');
+            setTimeout(() => catContainer.classList.remove('animate-level-up'), 800);
+
+            updateLabels();
+        }
+
+        function setRank(index) {
+            currentRankIndex = parseInt(index);
+            const rankData = ranks[currentRankIndex];
+
+            // Hide all batches
+            for(let i=1; i<=5; i++) {
+                document.getElementById(`eq-batch-${i}`).classList.add('hidden');
+                document.getElementById(`eq-batch-${i}`).classList.remove('block');
+            }
+
+            // Show active batch
+            document.getElementById(`eq-batch-${rankData.batch}`).classList.remove('hidden');
+            document.getElementById(`eq-batch-${rankData.batch}`).classList.add('block');
+
+            // Update Select UI if triggered externally
+            rankSelect.value = currentRankIndex;
+
+            // Flash effect
+            catContainer.classList.add('animate-level-up');
+            setTimeout(() => catContainer.classList.remove('animate-level-up'), 800);
+
+            xp = 0; // Reset XP on rank change
+            updateUI();
+        }
+
+        function triggerInteraction(type) {
+            if (type === 'good_charge') {
+                spawnFloatingText('+30 XP', 'text-primary');
+                catContainer.classList.add('animate-bounce-up');
+
+                hp = Math.min(100, hp + 15);
+                xp += 30;
+
+                if (xp >= 100) {
+                    if (currentRankIndex < 19) {
+                        spawnFloatingText('RANK UP!', 'text-rpg-gold', -60);
+                        setRank(currentRankIndex + 1);
+                    } else {
+                        xp = 100; // Maxed out
+                    }
+                }
+                setTimeout(() => catContainer.classList.remove('animate-bounce-up'), 500);
+            }
+            else if (type === 'overcharge') {
+                spawnFloatingText('-20 HP', 'text-rpg-muted');
+                catContainer.classList.add('animate-shake');
+                hp = Math.max(0, hp - 20);
+                setTimeout(() => catContainer.classList.remove('animate-shake'), 400);
+            }
+
+            updateUI();
+            evaluateHealthState();
+        }
+
+        // --- HEALTH & UI UPDATES --- //
+
+        function evaluateHealthState() {
+            if (hp > 60) forceHealthState('thriving');
+            else if (hp > 30) forceHealthState('tired');
+            else forceHealthState('sick');
+        }
+
+        function forceHealthState(stateName) {
+            stage.classList.remove('state-thriving', 'state-tired', 'state-sick');
+            document.getElementById('eye-l').style.height = '16px';
+            document.getElementById('eye-r').style.height = '16px';
+            document.getElementById('mouth').style.borderRadius = '9999px';
+            document.getElementById('mouth').style.transform = 'none';
+
+            if (stateName === 'thriving') {
+                stage.classList.add('state-thriving');
+                statusBadge.textContent = "Status: Thriving";
+                statusBadge.className = "bg-rpg-accent border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase mt-1 transition-colors";
+                aura.classList.replace('bg-rpg-muted/30', 'bg-rpg-accent/30');
+                aura.classList.replace('bg-gray-400/30', 'bg-rpg-accent/30');
+            }
+            else if (stateName === 'tired') {
+                stage.classList.add('state-tired');
+                statusBadge.textContent = "Status: Tired";
+                statusBadge.className = "bg-gray-500 border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase mt-1 transition-colors";
+                aura.classList.replace('bg-rpg-accent/30', 'bg-gray-400/30');
+                aura.classList.replace('bg-rpg-muted/30', 'bg-gray-400/30');
+                document.getElementById('eye-l').style.height = '4px';
+                document.getElementById('eye-r').style.height = '4px';
+            }
+            else if (stateName === 'sick') {
+                stage.classList.add('state-sick');
+                statusBadge.textContent = "Status: Critical";
+                statusBadge.className = "bg-rpg-muted border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase mt-1 transition-colors";
+                aura.classList.replace('bg-rpg-accent/30', 'bg-rpg-muted/30');
+                aura.classList.replace('bg-gray-400/30', 'bg-rpg-muted/30');
+                document.getElementById('mouth').style.transform = 'rotate(180deg) translateY(5px)';
+            }
+        }
+
+        function updateLabels() {
+            const rankData = ranks[currentRankIndex];
+            const speciesName = currentSpecies.charAt(0).toUpperCase() + currentSpecies.slice(1);
+            assetLabel.textContent = `Asset: ${rankData.name} ${speciesName} (Batch ${rankData.batch})`;
+            headerLvl.textContent = `RANK ${rankData.id}`;
+        }
+
+        function updateUI() {
+            let hpColor = 'bg-rpg-accent';
+            if (hp <= 60) hpColor = 'bg-primary';
+            if (hp <= 30) hpColor = 'bg-rpg-muted';
+
+            hpBar.className = `h-full ${hpColor} border-r-4 border-rpg-text transition-all duration-500`;
+            hpBar.style.width = `${hp}%`;
+            hpText.textContent = `${hp}/100`;
+
+            xpBar.style.width = `${xp}%`;
+            xpText.textContent = `${xp} / 100`;
+
+            updateLabels();
+
+            const badge = document.getElementById('lvl-badge');
+            badge.classList.add('scale-110');
+            setTimeout(() => badge.classList.remove('scale-110'), 200);
+        }
+
+        function spawnFloatingText(text, colorClass, offsetY = 0) {
+            const el = document.createElement('div');
+            el.className = `floating-text ${colorClass}`;
+            el.textContent = text;
+            const randomX = (Math.random() - 0.5) * 40;
+            el.style.left = `calc(50% + ${randomX}px)`;
+            el.style.top = `calc(30% + ${offsetY}px)`;
+            stage.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>

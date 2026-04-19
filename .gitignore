@@ -1,0 +1,6 @@
+# API keys & secrets
+.env
+mockups/config.js
+
+# OS
+.DS_Store

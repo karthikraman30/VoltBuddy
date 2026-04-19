@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ChargePet - Timeline & Data Engine</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#f9a215",
+                        "rpg-text": "#3D405B",
+                        "rpg-accent": "#2A9D8F",
+                        "rpg-bg": "#F4F1DE",
+                        "rpg-surface": "#81B29A",
+                        "rpg-muted": "#E07A5F",
+                        "rpg-gold": "#FACC15",
+                        "rpg-silver": "#9CA3AF",
+                        "rpg-royal": "#6B21A8",
+                        "rpg-duke": "#991B1B",
+                        "rpg-bad": "#dc2626"
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                    },
+                    boxShadow: {
+                        'hard': '4px 4px 0px #3D405B',
+                        'hard-sm': '2px 2px 0px #3D405B',
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background-color: #F4F1DE;
+            color: #3D405B;
+            touch-action: manipulation;
+            overflow-x: hidden;
+        }
+        .border-thick { border: 4px solid #3D405B; }
+        .btn-press:active { transform: translateY(4px); box-shadow: none !important; }
+
+        /* Base Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float { animation: float 3s infinite ease-in-out; }
+
+        @keyframes pulse-aura {
+            0% { transform: scale(0.95); opacity: 0.4; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(0.95); opacity: 0.4; }
+        }
+        .pulse-aura { animation: pulse-aura 4s infinite ease-in-out; }
+
+        /* Interaction Animations */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px) rotate(-2deg); }
+            40%, 80% { transform: translateX(5px) rotate(2deg); }
+        }
+        .animate-shake { animation: shake 0.4s ease-in-out; }
+
+        @keyframes bounce-up {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-15px) scale(1.05); }
+        }
+        .animate-bounce-up { animation: bounce-up 0.5s ease-out; }
+
+        @keyframes level-up-flash {
+            0% { filter: brightness(1); transform: scale(1); }
+            50% { filter: brightness(2) drop-shadow(0 0 20px #FACC15); transform: scale(1.2); }
+            100% { filter: brightness(1); transform: scale(1); }
+        }
+        .animate-level-up { animation: level-up-flash 0.8s ease-in-out; }
+
+        @keyframes float-up-fade {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-40px) scale(1.2); }
+        }
+        .floating-text {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 0px #3D405B;
+            pointer-events: none;
+            animation: float-up-fade 1s forwards;
+            z-index: 50;
+        }
+
+        /* Health States */
+        .state-thriving .cat-body { filter: none; }
+        .state-tired .cat-body { filter: grayscale(40%) brightness(0.9); animation: none; transform: translateY(5px); }
+        .state-sick .cat-body { filter: grayscale(70%) sepia(50%) hue-rotate(-50deg) saturate(3); animation: shake 2s infinite; }
+        .state-sick .pulse-aura { background-color: #E07A5F !important; animation-duration: 1s; }
+
+        /* --- SPECIES MORPHING LOGIC --- */
+        .species-cat #ear-l { top: -12px; left: -8px; width: 40px; height: 40px; border-radius: 1rem 0 0 0; transform: rotate(-12deg); }
+        .species-cat #ear-r { top: -12px; right: -8px; width: 40px; height: 40px; border-radius: 0 1rem 0 0; transform: rotate(12deg); }
+        .species-cat #snout { width: 12px; height: 8px; border-radius: 999px; }
+
+        .species-dog #ear-l { top: 10px; left: -15px; width: 32px; height: 48px; border-radius: 2rem 0 2rem 2rem; transform: rotate(15deg); }
+        .species-dog #ear-r { top: 10px; right: -15px; width: 32px; height: 48px; border-radius: 0 2rem 2rem 2rem; transform: rotate(-15deg); }
+        .species-dog #snout { width: 24px; height: 14px; border-radius: 8px; }
+
+        .species-rabbit #ear-l { top: -45px; left: 10px; width: 20px; height: 70px; border-radius: 2rem 2rem 0 0; transform: rotate(-5deg); }
+        .species-rabbit #ear-r { top: -45px; right: 10px; width: 20px; height: 70px; border-radius: 2rem 2rem 0 0; transform: rotate(5deg); }
+        .species-rabbit #snout { width: 8px; height: 6px; border-radius: 50%; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #81B29A; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #3D405B; }
+
+        .markdown-content b { color: #f9a215; }
+
+        .star-filled { color: #FACC15; text-shadow: 1px 1px 0 #3D405B; }
+        .star-empty { color: #d1d5db; text-shadow: 1px 1px 0 #9ca3af; }
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col max-w-md mx-auto border-x-4 border-rpg-text">
+
+
+    <!-- Header Stats -->
+    <header class="sticky top-0 z-20 bg-rpg-bg border-b-4 border-rpg-text p-4 flex justify-between items-center shadow-[0_4px_0_#3D405B]">
+        <!-- HIDDEN SANDBOX TRIGGER: Click this badge 5 times -->
+        <div class="flex items-center bg-white border-thick rounded-xl px-3 py-1 shadow-hard-sm transition-all cursor-pointer hover:bg-gray-100 select-none" id="lvl-badge" onclick="revealSandbox()">
+            <span class="material-symbols-outlined text-primary mr-1" style="font-variation-settings: 'FILL' 1;">star</span>
+            <span class="font-bold" id="header-lvl">RANK 1</span>
+        </div>
+
+        <div class="flex items-center bg-white border-thick rounded-xl px-3 py-1 shadow-hard-sm">
+            <span class="material-symbols-outlined text-rpg-surface mr-1">calendar_month</span>
+            <span class="font-bold text-sm" id="header-time">Week 0</span>
+        </div>
+    </header>
+
+    <!-- Main Game Area -->
+    <main class="flex-1 flex flex-col items-center justify-start p-6 gap-6 relative overflow-hidden bg-rpg-bg">
+
+        <!-- Pet Stage -->
+        <div id="pet-stage" class="relative flex flex-col items-center w-full mt-4 state-thriving">
+            <div id="pet-aura" class="absolute w-64 h-64 bg-rpg-accent/30 rounded-full blur-2xl pulse-aura -z-10 transition-colors duration-500"></div>
+
+            <!-- LLM Speech Bubble -->
+            <div id="speech-bubble" class="hidden absolute -top-12 left-1/2 -translate-x-1/2 bg-white border-thick rounded-2xl p-3 shadow-hard text-xs font-bold w-56 text-center z-50 animate-bounce-up text-rpg-text">
+                ...
+            </div>
+
+            <div id="cat-container" class="cat-body relative w-40 h-40 animate-float transition-all duration-300 flex items-center justify-center species-cat">
+                <div class="absolute inset-0 bg-primary rounded-full border-thick shadow-hard z-10 overflow-hidden flex flex-col items-center justify-center transition-colors">
+                    <div class="flex gap-4 mb-2 z-20">
+                        <div id="eye-l" class="w-3 h-4 bg-rpg-text rounded-full transition-all"></div>
+                        <div id="eye-r" class="w-3 h-4 bg-rpg-text rounded-full transition-all"></div>
+                    </div>
+                    <div class="flex flex-col items-center z-20">
+                        <div id="snout" class="bg-rpg-text transition-all duration-300"></div>
+                        <div id="mouth" class="w-4 h-4 border-b-4 border-rpg-text rounded-full -mt-1 transition-all"></div>
+                    </div>
+                    <div id="stripes" class="absolute top-2 flex gap-2 opacity-30 transition-opacity">
+                        <div class="w-1.5 h-6 bg-rpg-text rounded-full"></div>
+                        <div class="w-1.5 h-8 bg-rpg-text rounded-full"></div>
+                        <div class="w-1.5 h-6 bg-rpg-text rounded-full"></div>
+                    </div>
+                </div>
+
+                <div id="ear-l" class="absolute bg-primary border-thick z-0 transition-all duration-300"></div>
+                <div id="ear-r" class="absolute bg-primary border-thick z-0 transition-all duration-300"></div>
+
+                <!-- EQUIPMENT BATCHES -->
+                <div id="equipment" class="absolute inset-0 z-30 pointer-events-none transition-all duration-300">
+                    <div id="eq-batch-1" class="absolute inset-0 block">
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-12 bg-[#8B5A2B] border-thick rounded-b-full"></div>
+                    </div>
+                    <div id="eq-batch-2" class="absolute inset-0 hidden">
+                        <div class="absolute -top-4 left-1/2 -translate-x-1/2 w-36 h-16 bg-rpg-silver border-thick rounded-t-full"></div>
+                        <div class="absolute -top-12 left-1/2 -translate-x-1/2 w-8 h-10 bg-rpg-muted border-thick rounded-t-full"></div>
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-36 h-12 bg-rpg-text border-thick rounded-b-full flex justify-center gap-1">
+                            <div class="w-2 h-full bg-rpg-silver"></div>
+                            <div class="w-2 h-full bg-rpg-silver"></div>
+                        </div>
+                    </div>
+                    <div id="eq-batch-3" class="absolute inset-0 hidden">
+                        <div class="absolute top-6 left-1/2 -translate-x-1/2 w-32 h-14 bg-rpg-silver border-thick rounded-xl flex items-center justify-center gap-2">
+                            <div class="w-16 h-2 bg-rpg-text"></div>
+                        </div>
+                        <div class="absolute -bottom-4 -left-6 w-12 h-24 bg-rpg-surface border-thick rounded-l-full -z-10"></div>
+                        <div class="absolute -bottom-4 -right-6 w-12 h-24 bg-rpg-surface border-thick rounded-r-full -z-10"></div>
+                    </div>
+                    <div id="eq-batch-4" class="absolute inset-0 hidden">
+                        <div class="absolute top-2 left-1/2 -translate-x-1/2 w-[130px] h-[60px] bg-rpg-gold border-thick rounded-t-2xl flex justify-center">
+                            <div class="w-4 h-8 bg-white border-thick rounded-t-full -mt-4"></div>
+                        </div>
+                        <div class="absolute -bottom-6 -left-8 w-16 h-28 bg-rpg-duke border-thick rounded-l-full -z-10"></div>
+                        <div class="absolute -bottom-6 -right-8 w-16 h-28 bg-rpg-duke border-thick rounded-r-full -z-10"></div>
+                        <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-[140px] h-[50px] bg-rpg-silver border-thick rounded-b-full flex items-center justify-center">
+                            <div class="w-8 h-8 bg-rpg-gold border-thick rounded-full"></div>
+                        </div>
+                    </div>
+                    <div id="eq-batch-5" class="absolute inset-0 hidden">
+                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 flex items-end">
+                            <div class="w-8 h-12 bg-rpg-gold border-thick transform skew-x-12 rounded-t-md"></div>
+                            <div class="w-10 h-16 bg-rpg-gold border-thick -mx-2 rounded-t-md z-10"></div>
+                            <div class="w-8 h-12 bg-rpg-gold border-thick transform -skew-x-12 rounded-t-md"></div>
+                        </div>
+                        <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-44 h-16 bg-rpg-royal border-thick rounded-b-full flex justify-between px-2">
+                            <div class="w-6 h-full bg-white border-x-4 border-rpg-text border-dotted"></div>
+                            <div class="w-6 h-full bg-white border-x-4 border-rpg-text border-dotted"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Target Asset Label, Species Selector & Gemini Action -->
+            <div class="mt-8 text-center flex flex-col items-center w-full px-4">
+                <div id="asset-label" class="bg-rpg-text text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-1 text-center truncate w-full max-w-xs">
+                    Asset: Miles Cat (Batch 1)
+                </div>
+                <h2 id="pet-name" class="text-3xl font-bold uppercase tracking-tighter leading-none mt-1">Sparky</h2>
+
+                <!-- Quick Pet Selector -->
+                <div class="flex gap-2 justify-center mt-2 mb-1">
+                    <button onclick="setSpecies('cat')" class="bg-white border-2 border-rpg-text rounded-lg px-2 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press hover:bg-gray-100">🐱 Cat</button>
+                    <button onclick="setSpecies('dog')" class="bg-white border-2 border-rpg-text rounded-lg px-2 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press hover:bg-gray-100">🐶 Dog</button>
+                    <button onclick="setSpecies('rabbit')" class="bg-white border-2 border-rpg-text rounded-lg px-2 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press hover:bg-gray-100">🐰 Rabbit</button>
+                </div>
+
+                <div class="flex gap-2 items-center mt-2">
+                    <div id="status-badge" class="bg-rpg-accent border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors">
+                        Status: Thriving
+                    </div>
+                    <!-- Gemini Action -->
+                    <button onclick="talkToPet()" class="bg-white text-rpg-text border-2 border-rpg-text rounded-full px-3 py-1 text-xs font-bold uppercase shadow-hard-sm btn-press active:translate-y-1 active:shadow-none transition-all hover:bg-gray-100">
+                        Talk ✨
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bars -->
+        <div class="w-full space-y-4">
+            <div class="w-full flex flex-col gap-1">
+                <div class="flex justify-between font-bold text-sm uppercase">
+                    <span>Battery Health (HP)</span>
+                    <span id="hp-text">100/100</span>
+                </div>
+                <div class="w-full h-6 bg-white border-thick rounded-full overflow-hidden shadow-hard-sm">
+                    <div id="hp-bar" class="h-full bg-rpg-accent w-full border-r-4 border-rpg-text transition-all duration-500"></div>
+                </div>
+            </div>
+
+            <div class="w-full flex flex-col gap-1">
+                <div class="flex justify-between font-bold text-sm uppercase text-rpg-text/60">
+                    <span>Exp to Rank Up</span>
+                    <span id="xp-text">0 / 100</span>
+                </div>
+                <div class="w-full h-3 bg-white border-thick rounded-full overflow-hidden shadow-hard-sm">
+                    <div id="xp-bar" class="h-full bg-primary w-[0%] border-r-2 border-rpg-text transition-all duration-500"></div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- UI TABS -->
+    <div class="bg-rpg-text text-white flex border-t-4 border-rpg-text z-40 relative">
+        <button onclick="switchTab('tab-stats')" id="btn-stats" class="flex-1 py-3 font-bold text-[10px] uppercase tracking-wider border-r-2 border-white/20 bg-primary shadow-[inset_0_-4px_0_rgba(0,0,0,0.2)]">Stats</button>
+        <button onclick="switchTab('tab-tips')" id="btn-tips" class="flex-1 py-3 font-bold text-[10px] uppercase tracking-wider border-r-2 border-white/20 hover:bg-white/10">Tips</button>
+        <button onclick="switchTab('tab-data')" id="btn-data" class="flex-1 py-3 font-bold text-[10px] uppercase tracking-wider hover:bg-white/10">Logs</button>
+        <button onclick="switchTab('tab-sandbox')" id="btn-sandbox" class="hidden font-bold text-[10px] uppercase tracking-wider hover:bg-white/10 px-4 text-primary">Dev</button>
+    </div>
+
+    <!-- TAB CONTENTS -->
+    <section class="bg-white border-t-4 border-rpg-text p-4 pb-8 flex flex-col gap-4 relative z-30 flex-1 overflow-hidden h-[400px]">
+
+        <!-- STATS TAB (Duolingo/Angry Birds Style) -->
+        <div id="tab-stats" class="flex-col h-full gap-4 flex overflow-hidden">
+            <div class="flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-rpg-text">map</span>
+                    <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">Journey Map</h3>
+                </div>
+            </div>
+
+            <!-- Path to Legend Banner -->
+            <div id="legend-banner" class="bg-rpg-surface border-thick rounded-xl p-3 shadow-hard-sm text-white flex flex-col items-center shrink-0 hidden text-center">
+                <span class="font-bold text-xs uppercase tracking-wider opacity-80 mb-1">Path to Emperor</span>
+                <p class="font-black text-lg leading-tight" id="legend-prediction">--</p>
+                <div class="w-full bg-white/30 h-2 rounded-full mt-2 overflow-hidden border border-rpg-text">
+                    <div id="legend-progress" class="h-full bg-rpg-gold border-r border-rpg-text w-0"></div>
+                </div>
+            </div>
+
+            <!-- Stats Container (Vertical Timeline) -->
+            <div id="stats-content-area" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pr-2 pb-4 pt-2">
+                <div class="bg-rpg-bg border-2 border-rpg-text border-dashed rounded-xl p-4 text-center text-sm font-bold text-rpg-text/60">
+                    Run the simulation in the Logs tab first to build your Journey Map!
+                </div>
+            </div>
+        </div>
+
+        <!-- TIPS TAB -->
+        <div id="tab-tips" class="flex-col h-full gap-4 hidden overflow-y-auto custom-scrollbar pr-2">
+            <div class="flex items-center gap-2 mb-2 shrink-0">
+                <span class="material-symbols-outlined text-primary">psychology</span>
+                <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">Pet's Advice</h3>
+            </div>
+
+            <!-- Gemini Action -->
+            <button onclick="askPetAdvice()" class="w-full bg-primary border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 shrink-0">
+                <span class="material-symbols-outlined">auto_awesome</span> Ask Pet for Advice ✨
+            </button>
+
+            <div id="dynamic-tips-container" class="flex flex-col gap-3 shrink-0">
+                <div class="bg-rpg-bg border-2 border-rpg-text border-dashed rounded-xl p-4 text-center text-sm font-bold text-rpg-text/60">
+                    Run the simulation in the Logs tab first to receive personalized advice!
+                </div>
+            </div>
+
+            <h4 class="font-bold text-xs uppercase text-rpg-text/60 mt-4 mb-2 border-b-2 border-rpg-text/10 pb-1 shrink-0">General Wisdom</h4>
+
+            <div class="bg-[#E8E5D1] border-2 border-rpg-text rounded-xl p-3 flex gap-3 shadow-hard-sm shrink-0">
+                <span class="material-symbols-outlined text-rpg-surface text-2xl">battery_charging_full</span>
+                <div>
+                    <h5 class="font-bold text-sm uppercase">The Golden Rule: 20-80</h5>
+                    <p class="text-xs font-medium text-rpg-text/80 leading-tight mt-1">Keep your pet's energy between 20% and 80%. Going to 100% causes stress, and dropping below 20% makes them starve!</p>
+                </div>
+            </div>
+            <div class="bg-[#E8E5D1] border-2 border-rpg-text rounded-xl p-3 flex gap-3 shadow-hard-sm mt-3 shrink-0 mb-4">
+                <span class="material-symbols-outlined text-rpg-muted text-2xl">bedtime</span>
+                <div>
+                    <h5 class="font-bold text-sm uppercase">Beware the Night Charge</h5>
+                    <p class="text-xs font-medium text-rpg-text/80 leading-tight mt-1">Leaving your pet plugged in overnight guarantees severe overcharge damage. Avoid it to keep HP high.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA & TIMELINE TAB -->
+        <div id="tab-data" class="flex-col h-full gap-4 hidden">
+            <div class="flex justify-between items-center shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-rpg-text">dataset</span>
+                    <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">CSV Import</h3>
+                </div>
+                <!-- CSV Upload Button -->
+                <button onclick="document.getElementById('csv-file-input').click()" class="bg-rpg-surface text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg shadow-hard-sm btn-press flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[14px]">upload_file</span> Load CSV
+                </button>
+                <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleFileUpload(event)">
+            </div>
+
+            <textarea id="csv-input" class="w-full h-24 border-2 border-rpg-text rounded-xl p-2 font-mono text-[10px] text-rpg-text/80 shadow-inner resize-none bg-rpg-bg shrink-0">user_id,event_type,percentage,date,time,timezone
+1,power_connected,2,2025-10-23,19:00:35,+05:30
+1,power_disconnected,8,2025-10-23,19:07:38,+05:30
+1,power_connected,7,2025-10-23,19:17:43,+05:30
+1,power_disconnected,41,2025-10-23,20:02:50,+05:30
+1,power_connected,35,2025-10-23,22:11:47,+05:30
+1,power_disconnected,100,2025-10-24,00:29:42,+05:30
+1,power_connected,51,2025-10-27,09:51:39,+05:30
+1,power_disconnected,91,2025-10-27,10:30:36,+05:30
+1,power_connected,46,2025-10-27,19:14:25,+05:30
+1,power_disconnected,77,2025-10-27,19:33:14,+05:30
+1,power_connected,47,2025-10-28,00:51:17,+05:30
+1,power_disconnected,100,2025-10-28,07:00:32,+05:30
+1,power_connected,40,2025-10-28,17:32:38,+05:30
+1,power_disconnected,64,2025-10-28,17:47:24,+05:30
+1,power_connected,33,2025-10-28,22:20:39,+05:30
+1,power_disconnected,65,2025-10-28,22:33:43,+05:30
+1,power_connected,62,2025-10-28,22:56:42,+05:30
+1,power_disconnected,65,2025-10-28,23:03:38,+05:30
+1,power_connected,49,2025-10-29,00:36:31,+05:30
+1,power_disconnected,100,2025-10-29,06:34:09,+05:30
+1,power_connected,42,2025-10-29,14:06:48,+05:30
+1,power_disconnected,44,2025-10-29,14:09:15,+05:30
+1,power_connected,42,2025-10-29,14:15:17,+05:30
+1,power_disconnected,42,2025-10-29,14:16:34,+05:30
+1,power_connected,28,2025-10-29,18:48:23,+05:30
+1,power_disconnected,80,2025-10-29,19:13:24,+05:30
+1,power_connected,8,2025-10-31,18:56:10,+05:30
+1,power_disconnected,100,2025-10-31,21:48:15,+05:30
+1,power_connected,38,2025-11-02,19:53:27,+05:30
+1,power_disconnected,100,2025-11-02,20:42:30,+05:30
+1,power_connected,70,2025-11-04,15:35:00,+05:30
+1,power_disconnected,70,2025-11-04,15:35:11,+05:30
+1,power_connected,3,2025-11-08,10:47:20,+05:30
+1,power_disconnected,22,2025-11-08,10:54:13,+05:30
+1,power_connected,1,2025-11-09,20:49:34,+05:30
+1,power_disconnected,39,2025-11-09,21:04:45,+05:30
+1,power_connected,37,2025-11-09,22:49:14,+05:30
+1,power_disconnected,80,2025-11-10,00:44:13,+05:30
+1,power_connected,17,2025-11-12,16:01:17,+05:30
+1,power_disconnected,80,2025-11-13,00:09:06,+05:30</textarea>
+
+            <button onclick="runSimulation()" class="w-full bg-rpg-text border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 shrink-0">
+                <span class="material-symbols-outlined">play_arrow</span> Run Simulation
+            </button>
+
+            <div id="timeline-container" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3 pr-2 hidden pb-4">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- HIDDEN SANDBOX TAB -->
+        <div id="tab-sandbox" class="flex-col h-full gap-4 hidden overflow-y-auto custom-scrollbar pr-2">
+            <div class="flex flex-col gap-2 border-b-2 border-rpg-text/10 pb-4 shrink-0">
+                <h4 class="font-bold text-xs uppercase text-rpg-text/60">20-Tier Rank Progression</h4>
+                <select id="rank-select" onchange="setRank(this.value)" class="w-full border-2 border-rpg-text rounded-xl p-3 font-bold text-sm shadow-hard-sm focus:ring-0 focus:outline-none">
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mb-2 shrink-0">
+                <button onclick="triggerManualInteraction('good')" class="bg-rpg-surface border-thick rounded-xl p-3 shadow-hard btn-press flex flex-col items-center text-white">
+                    <span class="material-symbols-outlined mb-1">battery_charging_full</span>
+                    <span class="font-bold uppercase text-[10px]">Good Charge (+XP)</span>
+                </button>
+                <button onclick="triggerManualInteraction('bad')" class="bg-rpg-muted border-thick rounded-xl p-3 shadow-hard btn-press flex flex-col items-center text-white">
+                    <span class="material-symbols-outlined mb-1">battery_alert</span>
+                    <span class="font-bold uppercase text-[10px]">Overcharge (-HP)</span>
+                </button>
+            </div>
+
+            <div class="flex gap-2 justify-center shrink-0 mb-4">
+                <button onclick="forceHealthState('thriving')" class="bg-white border-2 border-rpg-text rounded-lg px-3 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press">Thriving</button>
+                <button onclick="forceHealthState('tired')" class="bg-white border-2 border-rpg-text rounded-lg px-3 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press">Tired</button>
+                <button onclick="forceHealthState('sick')" class="bg-white border-2 border-rpg-text rounded-lg px-3 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press">Sick</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // --- HIDDEN SANDBOX EASTER EGG ---
+        let badgeClickCount = 0;
+        function revealSandbox() {
+            badgeClickCount++;
+            if (badgeClickCount >= 5) {
+                document.getElementById('btn-sandbox').classList.remove('hidden');
+                spawnFloatingText('Sandbox Unlocked!', 'text-rpg-gold', -50);
+                badgeClickCount = 0; // Reset
+            }
+        }
+
+        // --- GEMINI API CONFIGURATION ---
+        const apiKey = "AIzaSyC8-rBadYPH88YRNwU9gYBOVJFJ1YMJdIU";
+
+        async function fetchGeminiWithRetry(prompt, systemPrompt, retries = 5) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] }
+            };
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const result = await response.json();
+                    return result.candidates?.[0]?.content?.parts?.[0]?.text || "No response received.";
+                } catch (e) {
+                    if (i === retries - 1) return "Me oracle broken. Try later.";
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+
+        // Data Arrays
+        const ranks = [
+            { id: 1, name: "Miles", batch: 1 }, { id: 2, name: "Decanus", batch: 1 }, { id: 3, name: "Optio", batch: 1 },
+            { id: 4, name: "Centurion", batch: 1 }, { id: 5, name: "Primus Pilus", batch: 1 }, { id: 6, name: "Squire", batch: 1 },
+            { id: 7, name: "Knight Bachelor", batch: 2 }, { id: 8, name: "Knight Banneret", batch: 2 }, { id: 9, name: "Prefect", batch: 2 },
+            { id: 10, name: "Tribune", batch: 2 }, { id: 11, name: "Hazarapatis", batch: 3 }, { id: 12, name: "Castellan", batch: 3 },
+            { id: 13, name: "Legatus Legionis", batch: 3 }, { id: 14, name: "Baivarapatis", batch: 3 }, { id: 15, name: "Baron/Lord", batch: 4 },
+            { id: 16, name: "Earl/Count", batch: 4 }, { id: 17, name: "Duke", batch: 4 }, { id: 18, name: "Marshal", batch: 4 },
+            { id: 19, name: "Grand Master", batch: 5 }, { id: 20, name: "King/Emperor", batch: 5 }
+        ];
+
+        // State Variables
+        let hp = 100;
+        let xp = 0;
+        let currentRankIndex = 0;
+        let currentSpecies = 'cat';
+
+        // Data Analytics Variables
+        let weeklyStats = {};
+        let globalMetrics = { overcharges: 0, criticalStarts: 0, perfectCharges: 0, total: 0, totalXpEarned: 0 };
+
+        // DOM Elements
+        const stage = document.getElementById('pet-stage');
+        const catContainer = document.getElementById('cat-container');
+        const hpBar = document.getElementById('hp-bar');
+        const hpText = document.getElementById('hp-text');
+        const xpBar = document.getElementById('xp-bar');
+        const xpText = document.getElementById('xp-text');
+        const statusBadge = document.getElementById('status-badge');
+        const assetLabel = document.getElementById('asset-label');
+        const headerLvl = document.getElementById('header-lvl');
+        const headerTime = document.getElementById('header-time');
+        const aura = document.getElementById('pet-aura');
+        const rankSelect = document.getElementById('rank-select');
+        const stripes = document.getElementById('stripes');
+
+        const timelineContainer = document.getElementById('timeline-container');
+        const tipsContainer = document.getElementById('dynamic-tips-container');
+        const statsContentArea = document.getElementById('stats-content-area');
+        const legendBanner = document.getElementById('legend-banner');
+        const legendPrediction = document.getElementById('legend-prediction');
+        const legendProgress = document.getElementById('legend-progress');
+
+        function init() {
+            ranks.forEach((r, idx) => {
+                const opt = document.createElement('option');
+                opt.value = idx;
+                opt.text = `${r.id}. ${r.name} (Batch ${r.batch})`;
+                rankSelect.appendChild(opt);
+            });
+            updateUI();
+        }
+
+        // --- GEMINI LLM FUNCTIONS ---
+
+        async function talkToPet() {
+            const petState = hp > 60 ? 'thriving' : (hp > 30 ? 'tired' : 'sick');
+            const rankName = ranks[currentRankIndex].name;
+
+            let explanation = "";
+            if (petState === 'sick' || petState === 'tired') {
+                if (globalMetrics.overcharges > globalMetrics.criticalStarts) {
+                    explanation = "Explain that you are hurt because the user overcharges you at night too many days.";
+                } else {
+                    explanation = "Explain that you are starving because the user lets the battery drop too low.";
+                }
+            }
+
+            const prompt = `You are a ${petState} ${currentSpecies} at Rank ${rankName}. Your name is Sparky. ${explanation} Give a short, 1-sentence quote. If you are thriving, be boastful. If sick or tired, complain about the user's bad habits. Limit your response to 12 words maximum.`;
+            const sysPrompt = "You are a companion pet. You speak like a primitive caveman with simple, broken English (e.g., 'Me happy!', 'You charge night many days, me burn!'). Do not break character. Do not use complex words.";
+
+            const bubble = document.getElementById('speech-bubble');
+            bubble.classList.remove('hidden');
+            bubble.innerText = "Thinking...";
+
+            const response = await fetchGeminiWithRetry(prompt, sysPrompt);
+            bubble.innerText = `"${response.replace(/"/g, '')}"`;
+
+            setTimeout(() => {
+                if(bubble.innerText.includes(response.substring(0, 10))) {
+                    bubble.classList.add('hidden');
+                }
+            }, 6000);
+        }
+
+        async function askPetAdvice() {
+            if (globalMetrics.total === 0) {
+                tipsContainer.innerHTML = `<div class="bg-rpg-bg border-2 border-rpg-bad border-dashed rounded-xl p-4 text-center text-sm font-bold text-rpg-bad/80">Please run a CSV Simulation in the Logs tab first!</div>`;
+                return;
+            }
+
+            const rankName = ranks[currentRankIndex].name;
+            const prompt = `You are my ${currentSpecies} pet currently at Rank ${rankName}. Here is my overall battery charging data: ${globalMetrics.total} total charges, ${globalMetrics.overcharges} overcharges (which burns you), ${globalMetrics.perfectCharges} perfect charges (which makes you strong, 20-80%), and ${globalMetrics.criticalStarts} times I starved you by letting the battery drop below 15%. Write a 2-paragraph performance review. Praise me for good things, scold me for bad things, and tell me what to do.`;
+            const sysPrompt = "You are a companion pet. You speak like a primitive caveman with simple, broken English (e.g., 'You charge night many days, me hurt. Do 20 to 80 charge.'). Give actionable tips to the user about their charging habits. Use simple markdown for bolding (**text**).";
+
+            tipsContainer.innerHTML = `<div class="bg-white border-2 border-primary rounded-xl p-6 shadow-hard-sm text-center flex flex-col items-center gap-3">
+                <span class="material-symbols-outlined animate-spin text-primary text-3xl">autorenew</span>
+                <p class="font-bold text-sm text-rpg-text">Pet is thinking hard...</p>
+            </div>`;
+
+            const response = await fetchGeminiWithRetry(prompt, sysPrompt);
+            const formattedHTML = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
+
+            tipsContainer.innerHTML = `
+                <div class="bg-white border-thick rounded-xl p-4 shadow-hard-sm flex flex-col gap-3">
+                    <div class="flex items-center gap-2 border-b-2 border-rpg-text/10 pb-2">
+                        <span class="material-symbols-outlined text-primary text-2xl">auto_awesome</span>
+                        <h4 class="font-bold uppercase tracking-wider text-rpg-text">Pet Speaks</h4>
+                    </div>
+                    <div class="text-sm text-rpg-text/90 leading-relaxed markdown-content">
+                        ${formattedHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- TAB LOGIC ---
+        function switchTab(tabId) {
+            ['tab-data', 'tab-stats', 'tab-tips', 'tab-sandbox'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+                document.getElementById(id).classList.remove('flex');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('flex');
+
+            ['btn-data', 'btn-stats', 'btn-tips', 'btn-sandbox'].forEach(id => {
+                document.getElementById(id).classList.remove('bg-primary', 'shadow-[inset_0_-4px_0_rgba(0,0,0,0.2)]');
+                document.getElementById(id).classList.add('hover:bg-white/10');
+            });
+
+            // Fix: Calculate button ID from tab ID instead of relying on global event
+            const activeBtnId = tabId.replace('tab-', 'btn-');
+            const activeBtn = document.getElementById(activeBtnId);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-primary', 'shadow-[inset_0_-4px_0_rgba(0,0,0,0.2)]');
+                activeBtn.classList.remove('hover:bg-white/10');
+            }
+        }
+
+        // --- SIMULATION & PARSING LOGIC ---
+        function runSimulation() {
+            const rawCsv = document.getElementById('csv-input').value;
+            const lines = rawCsv.trim().split('\n');
+            if (lines.length < 2) return;
+
+            let sessions = [];
+            let pendingConnect = null;
+
+            for(let i=1; i<lines.length; i++) {
+                const cols = lines[i].split(',');
+                if(cols.length < 5) continue;
+
+                const type = cols[1];
+                const pct = parseInt(cols[2]);
+                const date = cols[3];
+                const time = cols[4];
+
+                if(type === 'power_connected') {
+                    pendingConnect = { startPct: pct, startDate: date, startTime: time };
+                } else if(type === 'power_disconnected' && pendingConnect) {
+                    sessions.push({ ...pendingConnect, endPct: pct, endDate: date, endTime: time });
+                    pendingConnect = null;
+                }
+            }
+
+            if(sessions.length === 0) return;
+
+            const firstDateObj = new Date(`${sessions[0].startDate}T${sessions[0].startTime}`);
+            const lastDate = new Date(`${sessions[sessions.length-1].endDate}T${sessions[sessions.length-1].endTime}`);
+            const diffTime = Math.abs(lastDate - firstDateObj);
+            const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7)) || 1;
+            headerTime.textContent = `Week ${diffWeeks}`;
+
+            hp = 100; xp = 0; currentRankIndex = 0;
+            weeklyStats = {};
+            globalMetrics = { overcharges: 0, criticalStarts: 0, perfectCharges: 0, total: sessions.length, totalXpEarned: 0 };
+
+            timelineContainer.innerHTML = '';
+            timelineContainer.classList.remove('hidden');
+
+            sessions.forEach((s, idx) => {
+                let isOvercharge = s.endPct >= 95;
+                let isCriticalStart = s.startPct <= 10;
+                let isPerfectCharge = s.startPct >= 20 && s.endPct <= 85;
+
+                let hpDelta = 0; let xpDelta = 0; let msg = "Standard Charge";
+                let colorTheme = "bg-white border-rpg-text text-rpg-text";
+                let icon = "bolt";
+
+                if (isOvercharge) {
+                    hpDelta = -15; xpDelta = 5; msg = "Overcharge Penalty";
+                    colorTheme = "bg-[#fee2e2] border-rpg-bad text-rpg-bad"; icon = "battery_alert";
+                    globalMetrics.overcharges++;
+                } else if (isCriticalStart) {
+                    hpDelta = -10; xpDelta = 10; msg = "Critical Starvation";
+                    colorTheme = "bg-[#ffedd5] border-primary text-[#c2410c]"; icon = "warning";
+                    globalMetrics.criticalStarts++;
+                } else if (isPerfectCharge) {
+                    hpDelta = +5; xpDelta = 30; msg = "Perfect Charge!";
+                    colorTheme = "bg-[#d1fae5] border-rpg-surface text-[#065f46]"; icon = "stars";
+                    globalMetrics.perfectCharges++;
+                } else {
+                    hpDelta = +2; xpDelta = 15;
+                }
+
+                const sDate = new Date(s.startDate);
+                const daysDiff = Math.floor((sDate - firstDateObj) / (1000 * 60 * 60 * 24));
+                const weekNum = Math.floor(daysDiff / 7) + 1;
+                const weekKey = `Week ${weekNum}`;
+
+                if (!weeklyStats[weekKey]) weeklyStats[weekKey] = { xp:0, hpDelta:0, over:0, perf:0, crit:0, total:0, weekNum: weekNum };
+
+                weeklyStats[weekKey].xp += xpDelta;
+                weeklyStats[weekKey].hpDelta += hpDelta;
+                weeklyStats[weekKey].total++;
+                if (isOvercharge) weeklyStats[weekKey].over++;
+                if (isCriticalStart) weeklyStats[weekKey].crit++;
+                if (isPerfectCharge) weeklyStats[weekKey].perf++;
+
+                globalMetrics.totalXpEarned += xpDelta;
+
+                hp = Math.min(100, Math.max(0, hp + hpDelta));
+                xp += xpDelta;
+                while(xp >= 100 && currentRankIndex < 19) {
+                    currentRankIndex++;
+                    xp -= 100;
+                }
+                if (currentRankIndex >= 19) xp = 100;
+
+                const card = document.createElement('div');
+                card.className = `${colorTheme} border-thick rounded-xl p-3 flex justify-between items-center shadow-hard-sm opacity-0 transform translate-y-4 transition-all duration-500 shrink-0`;
+                card.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full border-2 border-current flex items-center justify-center bg-white/50">
+                            <span class="material-symbols-outlined">${icon}</span>
+                        </div>
+                        <div>
+                            <p class="font-bold text-xs uppercase tracking-wide opacity-70">${formatDateShort(s.startDate)} ${s.startTime.slice(0,5)}</p>
+                            <p class="font-black text-sm">${s.startPct}% &rarr; ${s.endPct}%</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex flex-col items-end">
+                        <span class="font-bold text-[10px] uppercase bg-white/50 px-2 py-0.5 rounded-md border border-current">${msg}</span>
+                        <span class="font-bold text-xs mt-1">${hpDelta > 0 ? '+'+hpDelta : hpDelta} HP | +${xpDelta} XP</span>
+                    </div>
+                `;
+                timelineContainer.prepend(card);
+
+                setTimeout(() => card.classList.remove('opacity-0', 'translate-y-4'), idx * 80);
+            });
+
+            setRank(currentRankIndex);
+            updateUI();
+            evaluateHealthState();
+
+            setTimeout(() => {
+                spawnFloatingText(`Final Rank: ${ranks[currentRankIndex].name}`, 'text-rpg-gold', -80);
+                renderStatsView(diffWeeks);
+                switchTab('tab-stats'); // Auto switch to stats after simulation to show off the Journey map
+            }, sessions.length * 80 + 500);
+
+            document.getElementById('csv-input').classList.add('hidden');
+        }
+
+        // --- STATS LOGIC (Duolingo/Angry Birds Map) ---
+        function renderStatsView(totalWeeks) {
+            statsContentArea.innerHTML = '<div class="relative pl-8 pt-2" id="journey-path"></div>';
+            const journeyPath = document.getElementById('journey-path');
+
+            const keys = Object.keys(weeklyStats);
+
+            if(keys.length === 0) return;
+
+            // Render Path to Legend Banner
+            const maxXPNeeded = 1900; // Rank 20 requires 1900 cumulative XP
+            const xpPerWeek = globalMetrics.totalXpEarned / totalWeeks;
+            const weeksLeft = xpPerWeek > 0 ? Math.ceil((maxXPNeeded - globalMetrics.totalXpEarned) / xpPerWeek) : '∞';
+            const progressPct = Math.min(100, (globalMetrics.totalXpEarned / maxXPNeeded) * 100);
+
+            legendBanner.classList.remove('hidden');
+            if(globalMetrics.totalXpEarned >= maxXPNeeded) {
+                legendPrediction.innerText = `You are an Emperor!`;
+            } else {
+                legendPrediction.innerText = `~${weeksLeft} Weeks Away`;
+            }
+            legendProgress.style.width = `${progressPct}%`;
+
+            // Draw Journey Line
+            journeyPath.innerHTML += `<div class="absolute left-4 top-6 bottom-6 w-1.5 bg-rpg-text/20 rounded-full"></div>`;
+
+            // Render nodes chronologically (Week 1 at top)
+            keys.forEach((key) => {
+                const stats = weeklyStats[key];
+
+                // Calculate Angry Birds Star Rating (1 to 3)
+                let stars = 1;
+                if (stats.over === 0 && stats.perf > stats.total * 0.5) stars = 3;
+                else if (stats.over <= 2) stars = 2;
+
+                let starHtml = '';
+                for(let i=1; i<=3; i++) {
+                    if(i <= stars) starHtml += `<span class="star-filled">★</span>`;
+                    else starHtml += `<span class="star-empty">★</span>`;
+                }
+
+                // Node Color based on stars
+                let nodeColor = stars === 3 ? 'bg-rpg-gold text-white' : (stars === 2 ? 'bg-primary text-white' : 'bg-rpg-muted text-white');
+
+                const node = document.createElement('div');
+                node.className = "relative mb-6 last:mb-0";
+                node.innerHTML = `
+                    <div class="absolute -left-8 top-4 w-8 h-8 rounded-full border-thick ${nodeColor} z-10 flex items-center justify-center shadow-hard-sm font-black text-xs">
+                        W${stats.weekNum}
+                    </div>
+                    <div class="bg-white border-thick p-3 rounded-xl shadow-hard ml-2 flex flex-col gap-2">
+                        <div class="flex justify-between items-center border-b-2 border-rpg-text/10 pb-1">
+                            <span class="font-bold text-xs uppercase text-rpg-text/60">${key} Complete</span>
+                            <div class="text-xl tracking-[0.2em] leading-none">${starHtml}</div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <div class="flex flex-col bg-[#d1fae5] rounded p-1 border-2 border-[#065f46]">
+                                <span class="text-[10px] uppercase font-bold text-[#065f46]/70">Perfect</span>
+                                <span class="text-sm font-black text-[#065f46]">${stats.perf}</span>
+                            </div>
+                            <div class="flex flex-col bg-[#fee2e2] rounded p-1 border-2 border-rpg-bad">
+                                <span class="text-[10px] uppercase font-bold text-rpg-bad/70">Overcharges</span>
+                                <span class="text-sm font-black text-rpg-bad">${stats.over}</span>
+                            </div>
+                        </div>
+                        <div class="bg-rpg-bg rounded-lg p-1.5 border-2 border-rpg-text text-center mt-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-rpg-text">XP Earned: <span class="text-primary text-sm font-black">+${stats.xp}</span></span>
+                        </div>
+                    </div>
+                `;
+                journeyPath.appendChild(node);
+            });
+        }
+
+        function formatDateShort(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        // --- PET LOGIC ---
+        function setSpecies(species) {
+            currentSpecies = species;
+            catContainer.classList.remove('species-cat', 'species-dog', 'species-rabbit');
+            catContainer.classList.add(`species-${species}`);
+            stripes.style.opacity = species === 'cat' ? '0.3' : '0';
+            catContainer.classList.add('animate-level-up');
+            setTimeout(() => catContainer.classList.remove('animate-level-up'), 800);
+            updateLabels();
+        }
+
+        function setRank(index) {
+            currentRankIndex = parseInt(index);
+            const rankData = ranks[currentRankIndex];
+
+            for(let i=1; i<=5; i++) {
+                document.getElementById(`eq-batch-${i}`).classList.add('hidden');
+                document.getElementById(`eq-batch-${i}`).classList.remove('block');
+            }
+
+            document.getElementById(`eq-batch-${rankData.batch}`).classList.remove('hidden');
+            document.getElementById(`eq-batch-${rankData.batch}`).classList.add('block');
+
+            if(rankSelect) rankSelect.value = currentRankIndex;
+
+            catContainer.classList.add('animate-level-up');
+            setTimeout(() => catContainer.classList.remove('animate-level-up'), 800);
+            updateUI();
+        }
+
+        function triggerManualInteraction(type) {
+            if (type === 'good') {
+                hp = Math.min(100, hp + 15);
+                xp += 30;
+                if (xp >= 100) {
+                    if (currentRankIndex < 19) { setRank(currentRankIndex + 1); xp = 0; }
+                    else { xp = 100; }
+                }
+            } else {
+                hp = Math.max(0, hp - 20);
+                catContainer.classList.add('animate-shake');
+                setTimeout(() => catContainer.classList.remove('animate-shake'), 400);
+            }
+            updateUI();
+            evaluateHealthState();
+        }
+
+        function evaluateHealthState() {
+            if (hp > 60) forceHealthState('thriving');
+            else if (hp > 30) forceHealthState('tired');
+            else forceHealthState('sick');
+        }
+
+        function forceHealthState(stateName) {
+            stage.classList.remove('state-thriving', 'state-tired', 'state-sick');
+            document.getElementById('eye-l').style.height = '16px';
+            document.getElementById('eye-r').style.height = '16px';
+            document.getElementById('mouth').style.borderRadius = '9999px';
+            document.getElementById('mouth').style.transform = 'none';
+
+            if (stateName === 'thriving') {
+                stage.classList.add('state-thriving');
+                statusBadge.textContent = "Status: Thriving";
+                statusBadge.className = "bg-rpg-accent border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors";
+                aura.classList.replace('bg-rpg-muted/30', 'bg-rpg-accent/30');
+                aura.classList.replace('bg-gray-400/30', 'bg-rpg-accent/30');
+            }
+            else if (stateName === 'tired') {
+                stage.classList.add('state-tired');
+                statusBadge.textContent = "Status: Tired";
+                statusBadge.className = "bg-gray-500 border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors";
+                aura.classList.replace('bg-rpg-accent/30', 'bg-gray-400/30');
+                aura.classList.replace('bg-rpg-muted/30', 'bg-gray-400/30');
+                document.getElementById('eye-l').style.height = '4px';
+                document.getElementById('eye-r').style.height = '4px';
+            }
+            else if (stateName === 'sick') {
+                stage.classList.add('state-sick');
+                statusBadge.textContent = "Status: Critical";
+                statusBadge.className = "bg-rpg-muted border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors";
+                aura.classList.replace('bg-rpg-accent/30', 'bg-rpg-muted/30');
+                aura.classList.replace('bg-gray-400/30', 'bg-rpg-muted/30');
+                document.getElementById('mouth').style.transform = 'rotate(180deg) translateY(5px)';
+            }
+        }
+
+        function updateLabels() {
+            const rankData = ranks[currentRankIndex];
+            const speciesName = currentSpecies.charAt(0).toUpperCase() + currentSpecies.slice(1);
+            assetLabel.textContent = `Asset: ${rankData.name} ${speciesName} (Batch ${rankData.batch})`;
+            headerLvl.textContent = `RANK ${rankData.id}`;
+        }
+
+        function updateUI() {
+            let hpColor = 'bg-rpg-accent';
+            if (hp <= 60) hpColor = 'bg-primary';
+            if (hp <= 30) hpColor = 'bg-rpg-muted';
+
+            hpBar.className = `h-full ${hpColor} border-r-4 border-rpg-text transition-all duration-500`;
+            hpBar.style.width = `${hp}%`;
+            hpText.textContent = `${hp}/100`;
+
+            xpBar.style.width = `${xp}%`;
+            xpText.textContent = `${xp} / 100`;
+
+            updateLabels();
+
+            const badge = document.getElementById('lvl-badge');
+            badge.classList.add('scale-110');
+            setTimeout(() => badge.classList.remove('scale-110'), 200);
+        }
+
+        function spawnFloatingText(text, colorClass, offsetY = 0) {
+            const el = document.createElement('div');
+            el.className = `floating-text ${colorClass}`;
+            el.textContent = text;
+            const randomX = (Math.random() - 0.5) * 40;
+            el.style.left = `calc(50% + ${randomX}px)`;
+            el.style.top = `calc(30% + ${offsetY}px)`;
+            stage.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('csv-input').value = e.target.result;
+                document.getElementById('csv-input').classList.remove('hidden');
+                document.getElementById('timeline-container').classList.add('hidden');
+                document.getElementById('timeline-container').innerHTML = '';
+                event.target.value = '';
+                spawnFloatingText('CSV Loaded!', 'text-rpg-surface', -20);
+            };
+            reader.readAsText(file);
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>

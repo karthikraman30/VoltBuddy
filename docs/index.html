@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>ChargePet - Timeline & Data Engine</title>
+    <title data-i18n="title">ChargePet - Timeline & Data Engine</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet" />
@@ -317,10 +317,19 @@
             <span class="font-bold" id="header-lvl">RANK 1</span>
         </div>
 
-        <div class="flex items-center bg-white border-thick rounded-xl px-3 py-1 shadow-hard-sm">
-            <span class="material-symbols-outlined text-rpg-surface mr-1">calendar_month</span>
-            <span class="font-bold text-sm" id="header-time">Week 0</span>
+
+        <div class="flex items-center gap-2">
+            <select id="locale-select" onchange="changeLocale(this.value)"
+                class="text-xs font-bold border-thick rounded-xl px-2 py-1 shadow-hard-sm cursor-pointer hover:bg-gray-100 focus:ring-0">
+                <option value="regular">Regular</option>
+                <option value="genz" selected>Gen Z</option>
+            </select>
+            <div class="flex items-center bg-white border-thick rounded-xl px-3 py-1 shadow-hard-sm">
+                <span class="material-symbols-outlined text-rpg-surface mr-1">calendar_month</span>
+                <span class="font-bold text-sm" id="header-time" data-i18n="week_label">Week 0</span>
+            </div>
         </div>
+
     </header>
 
     <!-- Main Game Area -->
@@ -436,15 +445,15 @@
                 <div class="flex gap-2 justify-center mt-2 mb-1">
                     <button onclick="setSpecies('cat')"
                         class="bg-white border-2 border-rpg-text rounded-lg px-2 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press hover:bg-gray-100">
-                        🐱 Cat
+                        <span data-i18n="cat_btn">🐱 Cat</span>
                     </button>
                     <button onclick="setSpecies('dog')"
                         class="bg-white border-2 border-rpg-text rounded-lg px-2 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press hover:bg-gray-100">
-                        🐶 Dog
+                        <span data-i18n="dog_btn">🐶 Dog</span>
                     </button>
                     <button onclick="setSpecies('rabbit')"
                         class="bg-white border-2 border-rpg-text rounded-lg px-2 py-1 font-bold text-[10px] uppercase shadow-hard-sm btn-press hover:bg-gray-100">
-                        🐰 Rabbit
+                        <span data-i18n="rabbit_btn">🐰 Rabbit</span>
                     </button>
                 </div>
 
@@ -456,7 +465,7 @@
                     <!-- Gemini Action -->
                     <button onclick="talkToPet()"
                         class="bg-white text-rpg-text border-2 border-rpg-text rounded-full px-3 py-1 text-xs font-bold uppercase shadow-hard-sm btn-press active:translate-y-1 active:shadow-none transition-all hover:bg-gray-100">
-                        Talk ✨
+                        <span data-i18n="talk_btn">Talk ✨</span>
                     </button>
                 </div>
             </div>
@@ -466,7 +475,7 @@
         <div class="w-full space-y-4">
             <div class="w-full flex flex-col gap-1">
                 <div class="flex justify-between font-bold text-sm uppercase">
-                    <span>Battery Health (HP)</span>
+                    <span data-i18n="battery_health">Battery Health (HP)</span>
                     <span id="hp-text">100/100</span>
                 </div>
                 <div class="w-full h-6 bg-white border-thick rounded-full overflow-hidden shadow-hard-sm">
@@ -478,7 +487,7 @@
 
             <div class="w-full flex flex-col gap-1">
                 <div class="flex justify-between font-bold text-sm uppercase text-rpg-text/60">
-                    <span>Exp to Rank Up</span>
+                    <span data-i18n="exp_rank_up">Exp to Rank Up</span>
                     <span id="xp-text">0 / 100</span>
                 </div>
                 <div class="w-full h-3 bg-white border-thick rounded-full overflow-hidden shadow-hard-sm">
@@ -493,19 +502,19 @@
     <div class="bg-rpg-text text-white flex border-t-4 border-rpg-text z-40 relative">
         <button onclick="switchTab('tab-stats')" id="btn-stats"
             class="flex-1 py-3 font-bold text-[10px] uppercase tracking-wider border-r-2 border-white/20 bg-primary shadow-[inset_0_-4px_0_rgba(0,0,0,0.2)]">
-            Stats
+            <span data-i18n="tab_stats">Stats</span>
         </button>
         <button onclick="switchTab('tab-tips')" id="btn-tips"
             class="flex-1 py-3 font-bold text-[10px] uppercase tracking-wider border-r-2 border-white/20 hover:bg-white/10">
-            Tips
+            <span data-i18n="tab_tips">Tips</span>
         </button>
         <button onclick="switchTab('tab-data')" id="btn-data"
             class="flex-1 py-3 font-bold text-[10px] uppercase tracking-wider hover:bg-white/10">
-            Logs
+            <span data-i18n="tab_logs">Logs</span>
         </button>
         <button onclick="switchTab('tab-sandbox')" id="btn-sandbox"
             class="hidden font-bold text-[10px] uppercase tracking-wider hover:bg-white/10 px-4 text-primary">
-            Dev
+            <span data-i18n="tab_sandbox">Dev</span>
         </button>
     </div>
 
@@ -518,7 +527,7 @@
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-rpg-text">map</span>
                     <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">
-                        Journey Map
+                        <span data-i18n="journey_map">Journey Map</span>
                     </h3>
                 </div>
             </div>
@@ -526,21 +535,22 @@
             <!-- Path to Legend Banner -->
             <div id="legend-banner"
                 class="bg-rpg-surface border-thick rounded-xl p-3 shadow-hard-sm text-white flex flex-col items-center shrink-0 hidden text-center">
-                <span class="font-bold text-xs uppercase tracking-wider opacity-80 mb-1">Path to Emperor</span>
-                <p class="font-black text-lg leading-tight" id="legend-prediction">
-                    --
-                </p>
-                <div class="w-full bg-white/30 h-2 rounded-full mt-2 overflow-hidden border border-rpg-text">
-                    <div id="legend-progress" class="h-full bg-rpg-gold border-r border-rpg-text w-0"></div>
-                </div>
+                <span class="font-bold text-xs uppercase tracking-wider opacity-80 mb-1"><span
+                        data-i18n="path_emperor">Path to Emperor</span>
+                    <p class="font-black text-lg leading-tight" id="legend-prediction">
+                        --
+                    </p>
+                    <div class="w-full bg-white/30 h-2 rounded-full mt-2 overflow-hidden border border-rpg-text">
+                        <div id="legend-progress" class="h-full bg-rpg-gold border-r border-rpg-text w-0"></div>
+                    </div>
             </div>
 
             <!-- Stats Container (Vertical Timeline) -->
             <div id="stats-content-area" class="flex-1 overflow-y-auto custom-scrollbar flex flex-col pr-2 pb-4 pt-2">
                 <div
                     class="bg-rpg-bg border-2 border-rpg-text border-dashed rounded-xl p-4 text-center text-sm font-bold text-rpg-text/60">
-                    Run the simulation in the Logs tab first to build your
-                    Journey Map!
+                    <span data-i18n="run_sim_stats_msg">Run the simulation in the Logs tab first to build your
+                        Journey Map!</span>
                 </div>
             </div>
         </div>
@@ -550,7 +560,7 @@
             <div class="flex items-center gap-2 mb-2 shrink-0">
                 <span class="material-symbols-outlined text-primary">psychology</span>
                 <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">
-                    Pet's Advice
+                    <span data-i18n="pets_advice">Pet's Advice</span>
                 </h3>
             </div>
 
@@ -558,32 +568,32 @@
             <button onclick="askPetAdvice()"
                 class="w-full bg-primary border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 shrink-0">
                 <span class="material-symbols-outlined">auto_awesome</span>
-                Ask Pet for Advice ✨
+                <span data-i18n="ask_advice_btn">Ask Pet for Advice ✨</span>
             </button>
 
             <div id="dynamic-tips-container" class="flex flex-col gap-3 shrink-0">
                 <div
                     class="bg-rpg-bg border-2 border-rpg-text border-dashed rounded-xl p-4 text-center text-sm font-bold text-rpg-text/60">
-                    Run the simulation in the Logs tab first to receive
-                    personalized advice!
+                    <span data-i18n="run_sim_tips_msg">Run the simulation in the Logs tab first to receive
+                        personalized advice!</span>
                 </div>
             </div>
 
             <h4
                 class="font-bold text-xs uppercase text-rpg-text/60 mt-4 mb-2 border-b-2 border-rpg-text/10 pb-1 shrink-0">
-                General Wisdom
+                <span data-i18n="general_wisdom">General Wisdom</span>
             </h4>
 
             <div class="bg-[#E8E5D1] border-2 border-rpg-text rounded-xl p-3 flex gap-3 shadow-hard-sm shrink-0">
                 <span class="material-symbols-outlined text-rpg-surface text-2xl">battery_charging_full</span>
                 <div>
                     <h5 class="font-bold text-sm uppercase">
-                        The Golden Rule: 20-80
+                        <span data-i18n="rule_20_80_title">The Golden Rule: 20-80</span>
                     </h5>
                     <p class="text-xs font-medium text-rpg-text/80 leading-tight mt-1">
-                        Keep your pet's energy between 20% and 80%. Going to
-                        100% causes stress, and dropping below 20% makes
-                        them starve!
+                        <span data-i18n="rule_20_80_desc">Keep your pet's energy between 20% and 80%. Going to
+                            100% causes stress, and dropping below 20% makes
+                            them starve!</span>
                     </p>
                 </div>
             </div>
@@ -592,11 +602,11 @@
                 <span class="material-symbols-outlined text-rpg-muted text-2xl">bedtime</span>
                 <div>
                     <h5 class="font-bold text-sm uppercase">
-                        Beware the Night Charge
+                        <span data-i18n="night_charge_title">Beware the Night Charge</span>
                     </h5>
                     <p class="text-xs font-medium text-rpg-text/80 leading-tight mt-1">
-                        Leaving your pet plugged in overnight guarantees
-                        severe overcharge damage. Avoid it to keep HP high.
+                        <span data-i18n="night_charge_desc">Leaving your pet plugged in overnight guarantees
+                            severe overcharge damage. Avoid it to keep HP high.</span>
                     </p>
                 </div>
             </div>
@@ -608,7 +618,7 @@
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-rpg-text">dataset</span>
                     <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">
-                        CSV Import
+                        <span data-i18n="csv_import">CSV Import</span>
                     </h3>
                 </div>
                 <!-- CSV Upload Button -->
@@ -617,7 +627,7 @@
                         "
                     class="bg-rpg-surface text-white text-[10px] font-bold uppercase px-3 py-1.5 rounded-lg shadow-hard-sm btn-press flex items-center gap-1">
                     <span class="material-symbols-outlined text-[14px]">upload_file</span>
-                    Load CSV
+                    <span data-i18n="load_csv">Load CSV</span>
                 </button>
                 <input type="file" id="csv-file-input" accept=".csv" class="hidden"
                     onchange="handleFileUpload(event)" />
@@ -670,7 +680,7 @@ user_id,event_type,percentage,date,time,timezone
             <button onclick="runSimulation()"
                 class="w-full bg-rpg-text border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 shrink-0">
                 <span class="material-symbols-outlined">play_arrow</span>
-                Run Simulation
+                <span data-i18n="run_simulation">Run Simulation</span>
             </button>
 
             <div id="timeline-container"
@@ -683,7 +693,7 @@ user_id,event_type,percentage,date,time,timezone
         <div id="tab-sandbox" class="flex-col h-full gap-4 hidden overflow-y-auto custom-scrollbar pr-2">
             <div class="flex flex-col gap-2 border-b-2 border-rpg-text/10 pb-4 shrink-0">
                 <h4 class="font-bold text-xs uppercase text-rpg-text/60">
-                    20-Tier Rank Progression
+                    <span data-i18n="tier_progression">7-Tier Rank Progression</span>
                 </h4>
                 <select id="rank-select" onchange="setRank(this.value)"
                     class="w-full border-2 border-rpg-text rounded-xl p-3 font-bold text-sm shadow-hard-sm focus:ring-0 focus:outline-none"></select>
@@ -693,12 +703,12 @@ user_id,event_type,percentage,date,time,timezone
                 <button onclick="triggerManualInteraction('good')"
                     class="bg-rpg-surface border-thick rounded-xl p-3 shadow-hard btn-press flex flex-col items-center text-white">
                     <span class="material-symbols-outlined mb-1">battery_charging_full</span>
-                    <span class="font-bold uppercase text-[10px]">Good Charge (+XP)</span>
+                    <span class="font-bold uppercase text-[10px]"><span data-i18n="good_charge">Good Charge (+XP)</span>
                 </button>
                 <button onclick="triggerManualInteraction('bad')"
                     class="bg-rpg-muted border-thick rounded-xl p-3 shadow-hard btn-press flex flex-col items-center text-white">
                     <span class="material-symbols-outlined mb-1">battery_alert</span>
-                    <span class="font-bold uppercase text-[10px]">Overcharge (-HP)</span>
+                    <span class="font-bold uppercase text-[10px]"><span data-i18n="overcharge">Overcharge (-HP)</span>
                 </button>
             </div>
 
@@ -729,7 +739,7 @@ user_id,event_type,percentage,date,time,timezone
                     .getElementById("btn-sandbox")
                     .classList.remove("hidden");
                 spawnFloatingText(
-                    "Sandbox Unlocked!",
+                    t('alert_sandbox', 'Sandbox Unlocked!'),
                     "text-rpg-gold",
                     -50,
                 );
@@ -738,14 +748,14 @@ user_id,event_type,percentage,date,time,timezone
         }
 
         // --- GEMINI API CONFIGURATION ---
-        const apiKey = "AIzaSyA8FejBDQqSMpAfiKbwwEbArxNmSqF_hHE";
+        const apiKey = "AIzaSyBZb5_0FFI8tR4HixmXubDdLxaxsoTdnPo";
 
         async function fetchGeminiWithRetry(
             prompt,
             systemPrompt,
             retries = 5,
         ) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key=${apiKey}`;
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
                 systemInstruction: { parts: [{ text: systemPrompt }] },
@@ -779,26 +789,13 @@ user_id,event_type,percentage,date,time,timezone
 
         // Data Arrays
         const ranks = [
-            { id: 1, name: "Miles", batch: 1 },
-            { id: 2, name: "Decanus", batch: 1 },
-            { id: 3, name: "Optio", batch: 1 },
-            { id: 4, name: "Centurion", batch: 1 },
-            { id: 5, name: "Primus Pilus", batch: 1 },
-            { id: 6, name: "Squire", batch: 1 },
-            { id: 7, name: "Knight Bachelor", batch: 2 },
-            { id: 8, name: "Knight Banneret", batch: 2 },
-            { id: 9, name: "Prefect", batch: 2 },
-            { id: 10, name: "Tribune", batch: 2 },
-            { id: 11, name: "Hazarapatis", batch: 3 },
-            { id: 12, name: "Castellan", batch: 3 },
-            { id: 13, name: "Legatus Legionis", batch: 3 },
-            { id: 14, name: "Baivarapatis", batch: 3 },
-            { id: 15, name: "Baron/Lord", batch: 4 },
-            { id: 16, name: "Earl/Count", batch: 4 },
-            { id: 17, name: "Duke", batch: 4 },
-            { id: 18, name: "Marshal", batch: 4 },
-            { id: 19, name: "Grand Master", batch: 5 },
-            { id: 20, name: "King/Emperor", batch: 5 },
+            { id: 1, name: "Recruit", batch: 1 },
+            { id: 2, name: "Squire", batch: 1 },
+            { id: 3, name: "Knight", batch: 2 },
+            { id: 4, name: "Captain", batch: 3 },
+            { id: 5, name: "Lord", batch: 4 },
+            { id: 6, name: "Duke", batch: 4 },
+            { id: 7, name: "Emperor", batch: 5 }
         ];
 
         // State Variables
@@ -848,7 +845,7 @@ user_id,event_type,percentage,date,time,timezone
             ranks.forEach((r, idx) => {
                 const opt = document.createElement("option");
                 opt.value = idx;
-                opt.text = `${r.id}. ${r.name} (Batch ${r.batch})`;
+                opt.text = `${r.id}. ${t("rank_" + r.id, r.name)} (Batch ${r.batch})`;
                 rankSelect.appendChild(opt);
             });
             updateUI();
@@ -859,7 +856,7 @@ user_id,event_type,percentage,date,time,timezone
         async function talkToPet() {
             const petState =
                 hp > 60 ? "thriving" : hp > 30 ? "tired" : "sick";
-            const rankName = ranks[currentRankIndex].name;
+            const rankName = t("rank_" + ranks[currentRankIndex].id, ranks[currentRankIndex].name);
 
             let explanation = "";
             if (petState === "sick" || petState === "tired") {
@@ -875,12 +872,11 @@ user_id,event_type,percentage,date,time,timezone
             }
 
             const prompt = `You are a ${petState} ${currentSpecies} at Rank ${rankName}. Your name is Sparky. ${explanation} Give a short, 1-sentence quote. If you are thriving, be boastful. If sick or tired, complain about the user's bad habits. Limit your response to 12 words maximum.`;
-            const sysPrompt =
-                "You are a companion pet. You speak like a primitive caveman with simple, broken English (e.g., 'Me happy!', 'You charge night many days, me burn!'). Do not break character. Do not use complex words.";
+            const sysPrompt = t("sys_prompt_talk", "You are a companion pet...");
 
             const bubble = document.getElementById("speech-bubble");
             bubble.classList.remove("hidden");
-            bubble.innerText = "Thinking...";
+            bubble.innerText = t("thinking", "Thinking...");
 
             const response = await fetchGeminiWithRetry(prompt, sysPrompt);
             bubble.innerText = `"${response.replace(/"/g, "")}"`;
@@ -889,7 +885,7 @@ user_id,event_type,percentage,date,time,timezone
                 if (bubble.innerText.includes(response.substring(0, 10))) {
                     bubble.classList.add("hidden");
                 }
-            }, 6000);
+            }, 10000);
         }
 
         async function askPetAdvice() {
@@ -898,10 +894,9 @@ user_id,event_type,percentage,date,time,timezone
                 return;
             }
 
-            const rankName = ranks[currentRankIndex].name;
+            const rankName = t("rank_" + ranks[currentRankIndex].id, ranks[currentRankIndex].name);
             const prompt = `You are my ${currentSpecies} pet currently at Rank ${rankName}. Here is my overall battery charging data: ${globalMetrics.total} total charges, ${globalMetrics.overcharges} overcharges (which burns you), ${globalMetrics.perfectCharges} perfect charges (which makes you strong, 20-80%), and ${globalMetrics.criticalStarts} times I starved you by letting the battery drop below 15%. Write a 2-paragraph performance review. Praise me for good things, scold me for bad things, and tell me what to do.`;
-            const sysPrompt =
-                "You are a companion pet. You speak like a primitive caveman with simple, broken English (e.g., 'You charge night many days, me hurt. Do 20 to 80 charge.'). Give actionable tips to the user about their charging habits. Use simple markdown for bolding (**text**).";
+            const sysPrompt = t("sys_prompt_advice", "You are a companion pet...");
 
             tipsContainer.innerHTML = `<div class="bg-white border-2 border-primary rounded-xl p-6 shadow-hard-sm text-center flex flex-col items-center gap-3">
                 <span class="material-symbols-outlined animate-spin text-primary text-3xl">autorenew</span>
@@ -1012,7 +1007,7 @@ user_id,event_type,percentage,date,time,timezone
             const diffTime = Math.abs(lastDate - firstDateObj);
             const diffWeeks =
                 Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7)) || 1;
-            headerTime.textContent = `Week ${diffWeeks}`;
+            headerTime.textContent = t('week_label').replace('{num}', diffWeeks);
 
             hp = 100;
             xp = 0;
@@ -1036,21 +1031,21 @@ user_id,event_type,percentage,date,time,timezone
 
                 let hpDelta = 0;
                 let xpDelta = 0;
-                let msg = "Standard Charge";
+                let msg = t("msg_standard_charge", "Standard Charge");
                 let colorTheme = "bg-white border-rpg-text text-rpg-text";
                 let icon = "bolt";
 
                 if (isOvercharge) {
                     hpDelta = -15;
                     xpDelta = 5;
-                    msg = "Overcharge Penalty";
+                    msg = t("msg_overcharge_penalty", "Overcharge Penalty");
                     colorTheme = "bg-[#fee2e2] border-rpg-bad text-rpg-bad";
                     icon = "battery_alert";
                     globalMetrics.overcharges++;
                 } else if (isCriticalStart) {
                     hpDelta = -10;
                     xpDelta = 10;
-                    msg = "Critical Starvation";
+                    msg = t("msg_critical_starvation", "Critical Starvation");
                     colorTheme =
                         "bg-[#ffedd5] border-primary text-[#c2410c]";
                     icon = "warning";
@@ -1058,7 +1053,7 @@ user_id,event_type,percentage,date,time,timezone
                 } else if (isPerfectCharge) {
                     hpDelta = +5;
                     xpDelta = 30;
-                    msg = "Perfect Charge!";
+                    msg = t("msg_perfect_charge", "Perfect Charge!");
                     colorTheme =
                         "bg-[#d1fae5] border-rpg-surface text-[#065f46]";
                     icon = "stars";
@@ -1097,11 +1092,11 @@ user_id,event_type,percentage,date,time,timezone
 
                 hp = Math.min(100, Math.max(0, hp + hpDelta));
                 xp += xpDelta;
-                while (xp >= 100 && currentRankIndex < 19) {
+                while (xp >= 100 && currentRankIndex < 6) {
                     currentRankIndex++;
                     xp -= 100;
                 }
-                if (currentRankIndex >= 19) xp = 100;
+                if (currentRankIndex >= 6) xp = 100;
 
                 const card = document.createElement("div");
                 card.className = `${colorTheme} border-thick rounded-xl p-3 flex justify-between items-center shadow-hard-sm opacity-0 transform translate-y-4 transition-all duration-500 shrink-0`;
@@ -1136,7 +1131,7 @@ user_id,event_type,percentage,date,time,timezone
             setTimeout(
                 () => {
                     spawnFloatingText(
-                        `Final Rank: ${ranks[currentRankIndex].name}`,
+                        t("final_rank", "Final Rank: {rank_name}").replace("{rank_name}", t("rank_" + ranks[currentRankIndex].id, ranks[currentRankIndex].name)),
                         "text-rpg-gold",
                         -80,
                     );
@@ -1160,7 +1155,7 @@ user_id,event_type,percentage,date,time,timezone
             if (keys.length === 0) return;
 
             // Render Path to Legend Banner
-            const maxXPNeeded = 1900; // Rank 20 requires 1900 cumulative XP
+            const maxXPNeeded = 600; // Rank 7 requires 600 cumulative XP
             const xpPerWeek = globalMetrics.totalXpEarned / totalWeeks;
             const weeksLeft =
                 xpPerWeek > 0
@@ -1176,9 +1171,9 @@ user_id,event_type,percentage,date,time,timezone
 
             legendBanner.classList.remove("hidden");
             if (globalMetrics.totalXpEarned >= maxXPNeeded) {
-                legendPrediction.innerText = `You are an Emperor!`;
+                legendPrediction.innerText = t("emperor", "You are an Emperor!");
             } else {
-                legendPrediction.innerText = `~${weeksLeft} Weeks Away`;
+                legendPrediction.innerText = t("weeks_away", "~{weeks} Weeks Away").replace("{weeks}", weeksLeft);
             }
             legendProgress.style.width = `${progressPct}%`;
 
@@ -1223,16 +1218,16 @@ user_id,event_type,percentage,date,time,timezone
                         </div>
                         <div class="grid grid-cols-2 gap-2 mt-1">
                             <div class="flex flex-col bg-[#d1fae5] rounded p-1 border-2 border-[#065f46]">
-                                <span class="text-[10px] uppercase font-bold text-[#065f46]/70">Perfect</span>
+                                <span class="text-[10px] uppercase font-bold text-[#065f46]/70">${t("stat_perfect", "Perfect")}</span>
                                 <span class="text-sm font-black text-[#065f46]">${stats.perf}</span>
                             </div>
                             <div class="flex flex-col bg-[#fee2e2] rounded p-1 border-2 border-rpg-bad">
-                                <span class="text-[10px] uppercase font-bold text-rpg-bad/70">Overcharges</span>
+                                <span class="text-[10px] uppercase font-bold text-rpg-bad/70">${t("stat_overcharges", "Overcharges")}</span>
                                 <span class="text-sm font-black text-rpg-bad">${stats.over}</span>
                             </div>
                         </div>
                         <div class="bg-rpg-bg rounded-lg p-1.5 border-2 border-rpg-text text-center mt-1">
-                            <span class="text-[10px] font-bold uppercase tracking-wider text-rpg-text">XP Earned: <span class="text-primary text-sm font-black">+${stats.xp}</span></span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-rpg-text"><span data-i18n="xp_earned">XP Earned:</span> <span class="text-primary text-sm font-black">+${stats.xp}</span></span>
                         </div>
                     </div>
                 `;
@@ -1301,7 +1296,7 @@ user_id,event_type,percentage,date,time,timezone
                 hp = Math.min(100, hp + 15);
                 xp += 30;
                 if (xp >= 100) {
-                    if (currentRankIndex < 19) {
+                    if (currentRankIndex < 6) {
                         setRank(currentRankIndex + 1);
                         xp = 0;
                     } else {
@@ -1339,7 +1334,7 @@ user_id,event_type,percentage,date,time,timezone
 
             if (stateName === "thriving") {
                 stage.classList.add("state-thriving");
-                statusBadge.textContent = "Status: Thriving";
+                statusBadge.textContent = t("status_thriving", "Status: Thriving");
                 statusBadge.className =
                     "bg-rpg-accent border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors";
                 aura.classList.replace(
@@ -1352,7 +1347,7 @@ user_id,event_type,percentage,date,time,timezone
                 );
             } else if (stateName === "tired") {
                 stage.classList.add("state-tired");
-                statusBadge.textContent = "Status: Tired";
+                statusBadge.textContent = t("status_tired", "Status: Tired");
                 statusBadge.className =
                     "bg-gray-500 border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors";
                 aura.classList.replace(
@@ -1364,7 +1359,7 @@ user_id,event_type,percentage,date,time,timezone
                 document.getElementById("eye-r").style.height = "4px";
             } else if (stateName === "sick") {
                 stage.classList.add("state-sick");
-                statusBadge.textContent = "Status: Critical";
+                statusBadge.textContent = t("status_critical", "Status: Critical");
                 statusBadge.className =
                     "bg-rpg-muted border-thick rounded-full px-4 py-1 text-white text-xs font-bold uppercase transition-colors";
                 aura.classList.replace(
@@ -1382,8 +1377,8 @@ user_id,event_type,percentage,date,time,timezone
             const speciesName =
                 currentSpecies.charAt(0).toUpperCase() +
                 currentSpecies.slice(1);
-            assetLabel.textContent = `Asset: ${rankData.name} ${speciesName} (Batch ${rankData.batch})`;
-            headerLvl.textContent = `RANK ${rankData.id}`;
+            assetLabel.textContent = t("asset_label", "Asset: {rank_name} {species} (Batch {batch})").replace("{rank_name}", t("rank_" + rankData.id, rankData.name)).replace("{species}", speciesName).replace("{batch}", rankData.batch);
+            headerLvl.textContent = t("level_label", "RANK {id}").replace("{id}", rankData.id);
         }
 
         function updateUI() {
@@ -1433,13 +1428,77 @@ user_id,event_type,percentage,date,time,timezone
                 document.getElementById("timeline-container").innerHTML =
                     "";
                 event.target.value = "";
-                spawnFloatingText("CSV Loaded!", "text-rpg-surface", -20);
+                spawnFloatingText(t('alert_csv_loaded', 'CSV Loaded!'), "text-rpg-surface", -20);
             };
             reader.readAsText(file);
         }
 
         window.onload = init;
+
+
+        let appLocales = { regular: { "title": "ChargePet - Timeline & Data Engine", "week_label": "Week 0", "cat_btn": "\ud83d\udc31 Cat", "dog_btn": "\ud83d\udc36 Dog", "rabbit_btn": "\ud83d\udc30 Rabbit", "talk_btn": "Talk \u2728", "battery_health": "Battery Health (HP)", "exp_rank_up": "Exp to Rank Up", "tab_stats": "Stats", "tab_tips": "Tips", "tab_logs": "Logs", "tab_sandbox": "Dev", "journey_map": "Journey Map", "path_emperor": "Path to Emperor", "run_sim_stats_msg": "Run the simulation in the Logs tab first to build your Journey Map!", "pets_advice": "Pet's Advice", "ask_advice_btn": "Ask Pet for Advice \u2728", "run_sim_tips_msg": "Run the simulation in the Logs tab first to receive personalized advice!", "general_wisdom": "General Wisdom", "rule_20_80_title": "The Golden Rule: 20-80", "rule_20_80_desc": "Keep your pet's energy between 20% and 80%. Going to 100% causes stress, and dropping below 20% makes them starve!", "night_charge_title": "Beware the Night Charge", "night_charge_desc": "Leaving your pet plugged in overnight guarantees severe overcharge damage. Avoid it to keep HP high.", "csv_import": "CSV Import", "load_csv": "Load CSV", "run_simulation": "Run Simulation", "tier_progression": "7-Tier Rank Progression", "good_charge": "Good Charge (+XP)", "overcharge": "Overcharge (-HP)", "state_thriving": "Thriving", "state_tired": "Tired", "state_sick": "Sick", "sys_prompt_talk": "You are a companion pet. You speak like a primitive caveman with simple, broken English (e.g., 'Me happy!', 'You charge night many days, me burn!'). Do not break character. Do not use complex words.", "sys_prompt_advice": "You are a companion pet. You speak like a primitive caveman with simple, broken English (e.g., 'You charge night many days, me hurt. Do 20 to 80 charge.'). Give actionable tips to the user about their charging habits. Use simple markdown for bolding (**text**).", "status_thriving": "Status: Thriving", "status_tired": "Status: Tired", "status_critical": "Status: Critical", "msg_overcharge_penalty": "Overcharge Penalty", "msg_critical_starvation": "Critical Starvation", "msg_perfect_charge": "Perfect Charge!", "msg_standard_charge": "Standard Charge", "alert_csv_loaded": "CSV Loaded!", "alert_sandbox": "Sandbox Unlocked!", "week_complete": "{week} Complete", "xp_earned": "XP Earned: ", "weeks_away": "~{weeks} Weeks Away", "emperor": "You are an Emperor!", "rank_1": "Recruit", "rank_2": "Squire", "rank_3": "Knight", "rank_4": "Captain", "rank_5": "Lord", "rank_6": "Duke", "rank_7": "Emperor", "asset_label": "Asset: {rank_name} {species} (Batch {batch})", "level_label": "RANK {id}", "final_rank": "Final Rank: {rank_name}", "thinking": "Thinking...", "stat_perfect": "Perfect", "stat_overcharges": "Overcharges" }, genz: { "title": "VoltBuddy - Vibing & Data", "week_label": "Week 0", "cat_btn": "\ud83d\udc31 Kitty", "dog_btn": "\ud83d\udc36 Doggo", "rabbit_btn": "\ud83d\udc30 Bunbun", "talk_btn": "Vibe Check \u2728", "battery_health": "Battery Vibes (HP)", "exp_rank_up": "Clout to Level Up", "tab_stats": "Receipts", "tab_tips": "Tea", "tab_logs": "Logs", "tab_sandbox": "Dev", "journey_map": "Vibe Check History", "path_emperor": "Path to GOAT", "run_sim_stats_msg": "Run the sim in the Logs tab first to get your receipts, bestie!", "pets_advice": "Spill the Tea", "ask_advice_btn": "Ask Pet for Tea \u2728", "run_sim_tips_msg": "Run the sim first so I can spill the tea!", "general_wisdom": "Main Character Energy", "rule_20_80_title": "The Golden Rule: 20-80 fr", "rule_20_80_desc": "Keep your pet's energy between 20% and 80%. Going to 100% is toxic, and dropping below 20% is literally starving them!", "night_charge_title": "Night Charging is an Ick", "night_charge_desc": "Leaving it plugged in overnight is major red flag energy. Avoid it to keep HP high.", "csv_import": "Drop the CSV", "load_csv": "Load Receipts", "run_simulation": "Send It", "tier_progression": "7-Tier Flex Progression", "good_charge": "W Charge (+Clout)", "overcharge": "L Charge (-Vibes)", "state_thriving": "Bussin", "state_tired": "Mid", "state_sick": "Down Bad", "sys_prompt_talk": "You are a companion pet. You speak like a GenZ teenager who uses a lot of slang like 'no cap', 'fr fr', 'bruh', 'sus', and 'bussin'. Do not break character.", "sys_prompt_advice": "You are a companion pet. You speak like a GenZ teenager. Give actionable advice about their charging in slang. Use simple markdown for bolding (**text**).", "status_thriving": "Vibe: Bussin", "status_tired": "Vibe: Mid", "status_critical": "Vibe: Down Bad", "msg_overcharge_penalty": "Big Yikes", "msg_critical_starvation": "Starving Fr", "msg_perfect_charge": "W Charge!", "msg_standard_charge": "It's giving charge", "alert_csv_loaded": "Receipts Dropped!", "alert_sandbox": "Dev Mode Unlocked No Cap!", "week_complete": "{week} in the bag", "xp_earned": "Clout Gained: ", "weeks_away": "~{weeks} Weeks to GOAT", "emperor": "You are the GOAT fr!", "rank_1": "NPC", "rank_2": "Lurker", "rank_3": "Based", "rank_4": "Verified", "rank_5": "Main Character", "rank_6": "Sigma", "rank_7": "The GOAT", "asset_label": "Drip: {rank_name} {species} (Drop {batch})", "level_label": "LEVEL {id}", "final_rank": "Final Clout: {rank_name}", "thinking": "Cooking...", "stat_perfect": "W's", "stat_overcharges": "L's" } };
+        let currentLocale = 'genz';
+
+        // Ensure we load via fetch or inline
+        async function loadLocales() {
+            try {
+                const resReg = await fetch('regular.json');
+                if (resReg.ok) appLocales.regular = await resReg.json();
+
+                const resGenz = await fetch('genz.json');
+                if (resGenz.ok) appLocales.genz = await resGenz.json();
+            } catch (e) {
+                console.warn('Failed to load json over fetch due to CORS/file path');
+            }
+            applyLocale();
+        }
+
+        function t(key, defaultVal) {
+            if (appLocales[currentLocale] && appLocales[currentLocale][key]) return appLocales[currentLocale][key];
+            return defaultVal || key;
+        }
+
+        window.changeLocale = function (loc) {
+            currentLocale = loc;
+            applyLocale();
+        }
+
+        function applyLocale() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (appLocales[currentLocale] && appLocales[currentLocale][key]) {
+                    el.innerHTML = appLocales[currentLocale][key];
+                }
+            });
+
+            // Regenerate rank options
+            const rs = document.getElementById("rank-select");
+            if (rs) {
+                Array.from(rs.options).forEach((opt, idx) => {
+                    const r = ranks[idx];
+                    opt.text = `${r.id}. ${t("rank_" + r.id, r.name)} (Batch ${r.batch})`;
+                });
+            }
+
+            // Update labels and active status
+            updateLabels();
+            evaluateHealthState();
+
+            // Re-render journey/stats if available
+            const diffWeeks = parseInt((headerTime.textContent.match(/\d+/) || [0])[0]);
+            if (diffWeeks > 0) {
+                headerTime.textContent = t('week_label').replace('{num}', diffWeeks);
+            }
+        }
+
+        const origInit = window.onload;
+        window.onload = async function () {
+            await loadLocales();
+            if (origInit) origInit();
+        };
+
     </script>
 </body>
+
 
 </html>

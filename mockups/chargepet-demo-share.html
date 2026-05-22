@@ -302,6 +302,123 @@
             color: #d1d5db;
             text-shadow: 1px 1px 0 #9ca3af;
         }
+
+        /* --- HEATMAP STYLES --- */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: 20px repeat(7, 1fr);
+            gap: 3px;
+            width: 100%;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border: 2px solid #3d405b;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            position: relative;
+            min-width: 0;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.2);
+            box-shadow: 2px 2px 0 #3d405b;
+            z-index: 5;
+        }
+
+        .heatmap-cell:active {
+            transform: scale(0.95);
+        }
+
+        .heatmap-day-label {
+            font-size: 9px;
+            font-weight: 700;
+            color: #3d405b;
+            opacity: 0.5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+        }
+
+        .heatmap-week-label {
+            font-size: 8px;
+            font-weight: 700;
+            color: #3d405b;
+            opacity: 0.4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .heatmap-popover {
+            position: fixed;
+            z-index: 100;
+            background: white;
+            border: 4px solid #3d405b;
+            border-radius: 12px;
+            padding: 10px 14px;
+            box-shadow: 4px 4px 0 #3d405b;
+            min-width: 160px;
+            pointer-events: auto;
+            animation: pop-in 0.2s ease-out;
+        }
+
+        @keyframes pop-in {
+            0% {
+                opacity: 0;
+                transform: scale(0.85);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .heatmap-toggle-btn {
+            background: white;
+            border: 2px solid #3d405b;
+            border-radius: 8px;
+            padding: 4px 8px;
+            font-weight: 700;
+            font-size: 10px;
+            text-transform: uppercase;
+            box-shadow: 2px 2px 0 #3d405b;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .heatmap-toggle-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+
+        .heatmap-toggle-btn.active {
+            background: #3d405b;
+            color: white;
+            box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .heatmap-legend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 600;
+            color: #3d405b;
+            opacity: 0.7;
+        }
+
+        .heatmap-legend-swatch {
+            width: 12px;
+            height: 12px;
+            border: 2px solid #3d405b;
+            border-radius: 3px;
+        }
     </style>
 </head>
 
@@ -514,6 +631,53 @@
         class="bg-white border-t-4 border-rpg-text p-4 pb-8 flex flex-col gap-4 relative z-30 flex-1 overflow-hidden h-[400px]">
         <!-- STATS TAB (Duolingo/Angry Birds Style) -->
         <div id="tab-stats" class="flex-col h-full gap-4 flex overflow-hidden">
+            <!-- HEATMAP SECTION -->
+            <div id="heatmap-section" class="shrink-0 hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-rpg-text">grid_view</span>
+                        <h3 class="font-bold text-sm uppercase tracking-widest text-rpg-text">
+                            Charging Heatmap
+                        </h3>
+                    </div>
+                </div>
+
+                <!-- Segmented Toggle -->
+                <div class="flex gap-2 justify-center mb-3" id="heatmap-toggles">
+                    <button class="heatmap-toggle-btn" data-mode="sessions" onclick="switchHeatmapMode('sessions')">
+                        🔢 Sessions
+                    </button>
+                    <button class="heatmap-toggle-btn" data-mode="quality" onclick="switchHeatmapMode('quality')">
+                        ⭐ Quality
+                    </button>
+                    <button class="heatmap-toggle-btn active" data-mode="score" onclick="switchHeatmapMode('score')">
+                        📊 Score
+                    </button>
+                </div>
+
+                <!-- Heatmap Grid -->
+                <div class="bg-rpg-bg border-thick rounded-xl p-3 shadow-hard-sm">
+                    <div id="heatmap-grid" class="heatmap-grid">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Legend -->
+                    <div class="flex justify-between items-center mt-3 px-1">
+                        <div class="heatmap-legend">
+                            <span>Less</span>
+                            <div class="heatmap-legend-swatch" style="background:#9CA3AF;"></div>
+                            <div class="heatmap-legend-swatch" style="background:#E07A5F;"></div>
+                            <div class="heatmap-legend-swatch" style="background:#F9A215;"></div>
+                            <div class="heatmap-legend-swatch" style="background:#81B29A;"></div>
+                            <div class="heatmap-legend-swatch" style="background:#FACC15;"></div>
+                            <span>More</span>
+                        </div>
+                        <span id="heatmap-summary" class="text-[10px] font-bold text-rpg-text/50 uppercase"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JOURNEY MAP SECTION -->
             <div class="flex items-center justify-between shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="material-symbols-outlined text-rpg-text">map</span>
@@ -623,8 +787,19 @@
                     onchange="handleFileUpload(event)" />
             </div>
 
-            <textarea id="csv-input"
-                class="w-full h-24 border-2 border-rpg-text rounded-xl p-2 font-mono text-[10px] text-rpg-text/80 shadow-inner resize-none bg-rpg-bg shrink-0">
+            <!-- Scrollable log sections container -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4 pr-1 pb-4">
+
+                <!-- LOG 1 — Normal Charging -->
+                <div class="shrink-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 bg-rpg-surface border-2 border-rpg-text rounded-md flex items-center justify-center">
+                            <span class="text-white font-black text-[10px]">1</span>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-rpg-text">Log 1 — Normal Charging</h4>
+                    </div>
+                    <textarea id="csv-input"
+                        class="w-full h-24 border-2 border-rpg-text rounded-xl p-2 font-mono text-[10px] text-rpg-text/80 shadow-inner resize-none bg-rpg-bg">
 user_id,event_type,percentage,date,time,timezone
 1,power_connected,2,2025-10-23,19:00:35,+05:30
 1,power_disconnected,8,2025-10-23,19:07:38,+05:30
@@ -666,16 +841,316 @@ user_id,event_type,percentage,date,time,timezone
 1,power_disconnected,80,2025-11-10,00:44:13,+05:30
 1,power_connected,17,2025-11-12,16:01:17,+05:30
 1,power_disconnected,80,2025-11-13,00:09:06,+05:30</textarea>
+                    <button onclick="runSimulation('csv-input')"
+                        class="w-full bg-rpg-text border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 mt-2">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        Run Simulation — Log 1
+                    </button>
+                </div>
 
-            <button onclick="runSimulation()"
-                class="w-full bg-rpg-text border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 shrink-0">
-                <span class="material-symbols-outlined">play_arrow</span>
-                Run Simulation
-            </button>
+                <!-- DIVIDER -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="flex-1 h-0.5 bg-rpg-text/20"></div>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-rpg-text/40">or try</span>
+                    <div class="flex-1 h-0.5 bg-rpg-text/20"></div>
+                </div>
 
-            <div id="timeline-container"
-                class="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3 pr-2 hidden pb-4">
-                <!-- Populated by JS -->
+                <!-- LOG 2 — Bad Charging -->
+                <div class="shrink-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 bg-rpg-muted border-2 border-rpg-text rounded-md flex items-center justify-center">
+                            <span class="text-white font-black text-[10px]">2</span>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-rpg-text">Log 2 — Bad Charging</h4>
+                    </div>
+                    <textarea id="csv-input-2"
+                        class="w-full h-24 border-2 border-rpg-text rounded-xl p-2 font-mono text-[10px] text-rpg-text/80 shadow-inner resize-none bg-rpg-bg">
+user_id,event_type,percentage,date,time,timezone
+108,power_connected,29,2025-10-21,18:28:22,+05:30
+108,power_disconnected,47,2025-10-21,18:43:52,+05:30
+108,power_connected,47,2025-10-21,19:02:15,+05:30
+108,power_disconnected,60,2025-10-21,19:13:41,+05:30
+108,power_connected,32,2025-10-22,16:10:17,+05:30
+108,power_disconnected,90,2025-10-22,17:22:20,+05:30
+108,power_connected,32,2025-10-23,10:07:50,+05:30
+108,power_disconnected,100,2025-10-23,11:12:24,+05:30
+108,power_connected,23,2025-10-23,20:19:53,+05:30
+108,power_disconnected,100,2025-10-23,22:16:14,+05:30
+108,power_connected,23,2025-10-25,09:59:17,+05:30
+108,power_disconnected,100,2025-10-25,11:51:44,+05:30
+108,power_connected,48,2025-10-25,21:48:43,+05:30
+108,power_disconnected,100,2025-10-25,22:59:19,+05:30
+108,power_connected,31,2025-10-27,16:19:43,+05:30
+108,power_disconnected,100,2025-10-27,17:24:40,+05:30
+108,power_connected,28,2025-10-31,11:21:13,+05:30
+108,power_disconnected,100,2025-10-31,12:19:52,+05:30
+108,power_connected,27,2025-11-02,19:40:54,+05:30
+108,power_disconnected,100,2025-11-02,20:47:52,+05:30
+108,power_connected,31,2025-11-04,19:30:19,+05:30
+108,power_disconnected,96,2025-11-04,20:12:12,+05:30
+108,power_connected,34,2025-11-06,14:03:33,+05:30
+108,power_disconnected,97,2025-11-06,14:48:09,+05:30
+108,power_connected,21,2025-11-07,19:44:39,+05:30
+108,power_disconnected,100,2025-11-07,21:04:40,+05:30
+108,power_connected,19,2025-11-09,10:53:42,+05:30
+108,power_disconnected,100,2025-11-09,11:51:08,+05:30
+108,power_connected,32,2025-11-11,11:32:59,+05:30
+108,power_disconnected,100,2025-11-11,12:58:54,+05:30</textarea>
+                    <button onclick="runSimulation('csv-input-2')"
+                        class="w-full bg-rpg-muted border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 mt-2">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        Run Simulation — Log 2
+                    </button>
+                </div>
+
+                <!-- DIVIDER -->
+                <div class="flex items-center gap-3 shrink-0">
+                    <div class="flex-1 h-0.5 bg-rpg-text/20"></div>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-rpg-text/40">or try</span>
+                    <div class="flex-1 h-0.5 bg-rpg-text/20"></div>
+                </div>
+
+                <!-- LOG 3 — Good Charging -->
+                <div class="shrink-0">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-6 h-6 bg-rpg-accent border-2 border-rpg-text rounded-md flex items-center justify-center">
+                            <span class="text-white font-black text-[10px]">3</span>
+                        </div>
+                        <h4 class="font-bold text-xs uppercase tracking-widest text-rpg-text">Log 3 — Good Charging</h4>
+                    </div>
+                    <textarea id="csv-input-3"
+                        class="w-full h-24 border-2 border-rpg-text rounded-xl p-2 font-mono text-[10px] text-rpg-text/80 shadow-inner resize-none bg-rpg-bg">
+user_id,event_type,percentage,date,time,timezone
+233,power_connected,18,2025-10-22,00:10:36,+05:30
+233,power_disconnected,35,2025-10-22,00:28:10,+05:30
+233,power_connected,16,2025-10-22,02:03:41,+05:30
+233,power_disconnected,50,2025-10-22,02:24:24,+05:30
+233,power_connected,33,2025-10-22,10:48:26,+05:30
+233,power_disconnected,46,2025-10-22,10:55:35,+05:30
+233,power_connected,27,2025-10-22,13:06:58,+05:30
+233,power_disconnected,54,2025-10-22,13:26:13,+05:30
+233,power_connected,48,2025-10-22,14:01:33,+05:30
+233,power_disconnected,73,2025-10-22,14:22:17,+05:30
+233,power_connected,22,2025-10-22,20:21:04,+05:30
+233,power_disconnected,28,2025-10-22,20:25:07,+05:30
+233,power_connected,22,2025-10-22,22:14:03,+05:30
+233,power_disconnected,47,2025-10-22,22:27:06,+05:30
+233,power_connected,35,2025-10-22,23:26:36,+05:30
+233,power_disconnected,58,2025-10-22,23:46:45,+05:30
+233,power_connected,55,2025-10-23,00:04:40,+05:30
+233,power_disconnected,57,2025-10-23,00:07:18,+05:30
+233,power_connected,23,2025-10-23,03:07:21,+05:30
+233,power_disconnected,32,2025-10-23,03:12:25,+05:30
+233,power_connected,23,2025-10-23,11:58:50,+05:30
+233,power_disconnected,45,2025-10-23,12:16:00,+05:30
+233,power_connected,40,2025-10-23,12:40:57,+05:30
+233,power_disconnected,58,2025-10-23,12:52:36,+05:30
+233,power_connected,42,2025-10-23,14:30:31,+05:30
+233,power_disconnected,51,2025-10-23,14:39:35,+05:30
+233,power_connected,34,2025-10-23,16:11:42,+05:30
+233,power_disconnected,51,2025-10-23,16:25:47,+05:30
+233,power_connected,17,2025-10-23,20:01:01,+05:30
+233,power_disconnected,43,2025-10-23,20:19:15,+05:30
+233,power_connected,28,2025-10-23,21:54:14,+05:30
+233,power_disconnected,51,2025-10-23,22:14:26,+05:30
+233,power_connected,17,2025-10-24,11:28:40,+05:30
+233,power_disconnected,62,2025-10-24,12:01:49,+05:30
+233,power_connected,56,2025-10-24,12:50:44,+05:30
+233,power_disconnected,69,2025-10-24,13:01:31,+05:30
+233,power_connected,49,2025-10-24,14:54:10,+05:30
+233,power_disconnected,83,2025-10-24,15:21:31,+05:30
+233,power_connected,53,2025-10-24,19:48:03,+05:30
+233,power_disconnected,90,2025-10-24,20:19:14,+05:30
+233,power_connected,19,2025-10-25,10:38:05,+05:30
+233,power_disconnected,39,2025-10-25,10:51:59,+05:30
+233,power_connected,29,2025-10-25,13:48:34,+05:30
+233,power_disconnected,72,2025-10-25,14:22:20,+05:30
+233,power_connected,23,2025-10-25,18:49:06,+05:30
+233,power_disconnected,45,2025-10-25,19:06:24,+05:30
+233,power_connected,25,2025-10-25,23:03:43,+05:30
+233,power_disconnected,29,2025-10-25,23:06:12,+05:30
+233,power_connected,19,2025-10-25,23:54:14,+05:30
+233,power_disconnected,39,2025-10-26,00:10:47,+05:30
+233,power_connected,27,2025-10-26,01:18:58,+05:30
+233,power_disconnected,55,2025-10-26,01:44:06,+05:30
+233,power_connected,16,2025-10-26,12:24:54,+05:30
+233,power_disconnected,67,2025-10-26,13:07:53,+05:30
+233,power_connected,62,2025-10-26,13:39:47,+05:30
+233,power_disconnected,74,2025-10-26,13:49:33,+05:30
+233,power_connected,13,2025-10-26,22:07:20,+05:30
+233,power_disconnected,56,2025-10-26,22:33:28,+05:30
+233,power_connected,49,2025-10-26,23:30:04,+05:30
+233,power_disconnected,69,2025-10-26,23:45:10,+05:30
+233,power_connected,65,2025-10-27,00:13:16,+05:30
+233,power_disconnected,85,2025-10-27,00:28:06,+05:30
+233,power_connected,31,2025-10-27,12:23:29,+05:30
+233,power_disconnected,48,2025-10-27,12:37:30,+05:30
+233,power_connected,19,2025-10-27,16:22:54,+05:30
+233,power_disconnected,48,2025-10-27,16:47:04,+05:30
+233,power_connected,46,2025-10-27,16:54:47,+05:30
+233,power_disconnected,60,2025-10-27,17:08:45,+05:30
+233,power_connected,55,2025-10-27,17:40:17,+05:30
+233,power_disconnected,72,2025-10-27,17:54:12,+05:30
+233,power_connected,34,2025-10-27,22:24:44,+05:30
+233,power_disconnected,34,2025-10-27,22:25:10,+05:30
+233,power_connected,27,2025-10-27,23:12:56,+05:30
+233,power_disconnected,64,2025-10-27,23:47:35,+05:30
+233,power_connected,32,2025-10-28,04:20:20,+05:30
+233,power_disconnected,55,2025-10-28,04:38:37,+05:30
+233,power_connected,20,2025-10-28,08:04:39,+05:30
+233,power_disconnected,76,2025-10-28,08:37:10,+05:30
+233,power_connected,35,2025-10-28,17:24:28,+05:30
+233,power_disconnected,74,2025-10-28,17:57:09,+05:30
+233,power_connected,16,2025-10-29,08:50:40,+05:30
+233,power_disconnected,36,2025-10-29,09:01:26,+05:30
+233,power_connected,18,2025-10-29,12:51:34,+05:30
+233,power_disconnected,56,2025-10-29,13:31:50,+05:30
+233,power_connected,37,2025-10-29,15:30:21,+05:30
+233,power_disconnected,56,2025-10-29,15:46:17,+05:30
+233,power_connected,32,2025-10-29,19:47:07,+05:30
+233,power_disconnected,71,2025-10-29,20:12:06,+05:30
+233,power_connected,33,2025-10-29,23:44:52,+05:30
+233,power_disconnected,38,2025-10-29,23:49:16,+05:30
+233,power_connected,18,2025-10-30,08:02:17,+05:30
+233,power_disconnected,73,2025-10-30,08:33:29,+05:30
+233,power_connected,15,2025-10-30,15:08:27,+05:30
+233,power_disconnected,58,2025-10-30,15:45:58,+05:30
+233,power_connected,39,2025-10-30,17:57:16,+05:30
+233,power_disconnected,40,2025-10-30,17:58:03,+05:30
+233,power_connected,27,2025-10-30,19:45:13,+05:30
+233,power_disconnected,49,2025-10-30,20:02:55,+05:30
+233,power_connected,17,2025-10-30,23:18:29,+05:30
+233,power_disconnected,65,2025-10-31,00:00:00,+05:30
+233,power_connected,23,2025-10-31,11:00:32,+05:30
+233,power_disconnected,44,2025-10-31,11:19:48,+05:30
+233,power_connected,26,2025-10-31,13:53:31,+05:30
+233,power_disconnected,37,2025-10-31,14:02:49,+05:30
+233,power_connected,26,2025-10-31,15:11:32,+05:30
+233,power_disconnected,85,2025-10-31,15:47:19,+05:30
+233,power_connected,52,2025-10-31,18:54:02,+05:30
+233,power_disconnected,72,2025-10-31,19:06:23,+05:30
+233,power_connected,27,2025-11-01,00:16:47,+05:30
+233,power_disconnected,63,2025-11-01,00:42:25,+05:30
+233,power_connected,50,2025-11-01,08:24:25,+05:30
+233,power_disconnected,66,2025-11-01,08:33:16,+05:30
+233,power_connected,15,2025-11-01,15:05:18,+05:30
+233,power_disconnected,90,2025-11-01,16:18:37,+05:30
+233,power_connected,12,2025-11-02,11:39:24,+05:30
+233,power_disconnected,45,2025-11-02,12:00:08,+05:30
+233,power_connected,35,2025-11-02,12:49:00,+05:30
+233,power_disconnected,45,2025-11-02,12:56:48,+05:30
+233,power_connected,16,2025-11-02,15:48:15,+05:30
+233,power_disconnected,63,2025-11-02,16:26:59,+05:30
+233,power_connected,28,2025-11-02,21:28:37,+05:30
+233,power_disconnected,80,2025-11-02,22:03:08,+05:30
+233,power_connected,77,2025-11-02,22:24:23,+05:30
+233,power_disconnected,79,2025-11-02,22:28:55,+05:30
+233,power_connected,23,2025-11-03,14:07:34,+05:30
+233,power_disconnected,90,2025-11-03,15:03:30,+05:30
+233,power_connected,17,2025-11-04,00:07:44,+05:30
+233,power_disconnected,27,2025-11-04,00:18:00,+05:30
+233,power_connected,18,2025-11-04,01:37:43,+05:30
+233,power_disconnected,43,2025-11-04,01:56:18,+05:30
+233,power_connected,41,2025-11-04,14:01:16,+05:30
+233,power_disconnected,71,2025-11-04,14:19:50,+05:30
+233,power_connected,37,2025-11-04,17:56:06,+05:30
+233,power_disconnected,55,2025-11-04,18:10:12,+05:30
+233,power_connected,24,2025-11-04,22:30:48,+05:30
+233,power_disconnected,56,2025-11-04,22:56:50,+05:30
+233,power_connected,54,2025-11-04,23:05:28,+05:30
+233,power_disconnected,65,2025-11-04,23:13:52,+05:30
+233,power_connected,16,2025-11-05,15:52:35,+05:30
+233,power_disconnected,66,2025-11-05,16:38:46,+05:30
+233,power_connected,27,2025-11-05,21:15:57,+05:30
+233,power_disconnected,56,2025-11-05,21:40:25,+05:30
+233,power_connected,17,2025-11-06,03:48:34,+05:30
+233,power_disconnected,66,2025-11-06,04:29:57,+05:30
+233,power_connected,27,2025-11-06,14:13:08,+05:30
+233,power_disconnected,55,2025-11-06,14:42:40,+05:30
+233,power_connected,37,2025-11-06,16:27:15,+05:30
+233,power_disconnected,42,2025-11-06,16:30:38,+05:30
+233,power_connected,16,2025-11-06,21:38:42,+05:30
+233,power_disconnected,48,2025-11-06,22:04:25,+05:30
+233,power_connected,36,2025-11-07,01:22:15,+05:30
+233,power_disconnected,43,2025-11-07,01:26:04,+05:30
+233,power_connected,32,2025-11-07,09:56:21,+05:30
+233,power_disconnected,43,2025-11-07,10:02:16,+05:30
+233,power_connected,35,2025-11-07,11:11:34,+05:30
+233,power_disconnected,79,2025-11-07,11:47:38,+05:30
+233,power_connected,48,2025-11-07,15:44:07,+05:30
+233,power_disconnected,72,2025-11-07,15:58:21,+05:30
+233,power_connected,27,2025-11-07,23:20:29,+05:30
+233,power_disconnected,29,2025-11-07,23:22:34,+05:30
+233,power_connected,14,2025-11-08,03:22:02,+05:30
+233,power_disconnected,70,2025-11-08,03:59:40,+05:30
+233,power_connected,25,2025-11-08,17:28:40,+05:30
+233,power_disconnected,38,2025-11-08,17:36:23,+05:30
+233,power_connected,5,2025-11-08,20:54:15,+05:30
+233,power_disconnected,31,2025-11-08,21:09:04,+05:30
+233,power_connected,28,2025-11-08,21:45:30,+05:30
+233,power_disconnected,63,2025-11-08,22:09:50,+05:30
+233,power_connected,37,2025-11-09,04:32:09,+05:30
+233,power_disconnected,53,2025-11-09,04:40:34,+05:30
+233,power_connected,36,2025-11-09,14:29:11,+05:30
+233,power_disconnected,48,2025-11-09,14:35:15,+05:30
+233,power_connected,22,2025-11-09,19:35:34,+05:30
+233,power_disconnected,51,2025-11-09,19:51:41,+05:30
+233,power_connected,41,2025-11-09,21:13:24,+05:30
+233,power_disconnected,45,2025-11-09,21:17:32,+05:30
+233,power_connected,36,2025-11-09,22:15:48,+05:30
+233,power_disconnected,46,2025-11-09,22:21:23,+05:30
+233,power_connected,39,2025-11-09,23:04:33,+05:30
+233,power_disconnected,88,2025-11-09,23:35:27,+05:30
+233,power_connected,33,2025-11-10,14:06:32,+05:30
+233,power_disconnected,85,2025-11-10,14:37:33,+05:30
+233,power_connected,20,2025-11-11,00:10:34,+05:30
+233,power_disconnected,32,2025-11-11,00:16:38,+05:30
+233,power_connected,18,2025-11-11,01:36:51,+05:30
+233,power_disconnected,64,2025-11-11,02:08:56,+05:30
+233,power_connected,31,2025-11-11,12:07:30,+05:30
+233,power_disconnected,61,2025-11-11,12:24:16,+05:30
+233,power_connected,36,2025-11-11,15:52:13,+05:30
+233,power_disconnected,47,2025-11-11,16:00:46,+05:30
+233,power_connected,32,2025-11-11,17:20:15,+05:30
+233,power_disconnected,47,2025-11-11,17:31:59,+05:30
+233,power_connected,15,2025-11-11,21:46:49,+05:30
+233,power_disconnected,44,2025-11-11,22:07:36,+05:30
+233,power_connected,29,2025-11-12,10:30:37,+05:30
+233,power_disconnected,67,2025-11-12,10:55:35,+05:30
+233,power_connected,28,2025-11-12,16:07:46,+05:30
+233,power_disconnected,73,2025-11-12,16:33:23,+05:30
+233,power_connected,69,2025-11-12,17:21:27,+05:30
+233,power_disconnected,88,2025-11-12,17:37:48,+05:30
+233,power_connected,67,2025-11-12,20:36:03,+05:30
+233,power_disconnected,82,2025-11-12,20:47:59,+05:30
+233,power_connected,32,2025-11-13,02:21:57,+05:30
+233,power_disconnected,44,2025-11-13,02:31:00,+05:30
+233,power_connected,20,2025-11-13,14:21:07,+05:30
+233,power_disconnected,45,2025-11-13,14:37:41,+05:30
+233,power_connected,30,2025-11-13,15:54:17,+05:30
+233,power_disconnected,64,2025-11-13,16:23:41,+05:30
+233,power_connected,59,2025-11-13,16:58:08,+05:30
+233,power_disconnected,70,2025-11-13,17:05:22,+05:30
+233,power_connected,21,2025-11-13,23:57:58,+05:30
+233,power_disconnected,86,2025-11-14,00:40:30,+05:30
+233,power_connected,23,2025-11-14,13:44:52,+05:30
+233,power_disconnected,31,2025-11-14,13:51:23,+05:30
+233,power_connected,15,2025-11-14,14:58:05,+05:30
+233,power_disconnected,34,2025-11-14,15:20:24,+05:30
+233,power_connected,22,2025-11-14,16:20:59,+05:30
+233,power_disconnected,85,2025-11-14,17:00:46,+05:30</textarea>
+                    <button onclick="runSimulation('csv-input-3')"
+                        class="w-full bg-rpg-accent border-thick rounded-xl p-3 shadow-hard btn-press text-white font-bold uppercase tracking-wider flex items-center justify-center gap-2 mt-2">
+                        <span class="material-symbols-outlined">play_arrow</span>
+                        Run Simulation — Log 3
+                    </button>
+                </div>
+
+                <!-- Timeline Container (shared, shows results from whichever log was run) -->
+                <div id="timeline-container"
+                    class="flex flex-col gap-3 hidden pb-4 shrink-0">
+                    <!-- Populated by JS -->
+                </div>
             </div>
         </div>
 
@@ -809,6 +1284,8 @@ user_id,event_type,percentage,date,time,timezone
 
         // Data Analytics Variables
         let weeklyStats = {};
+        let dailyData = {};
+        let currentHeatmapMode = 'score';
         let globalMetrics = {
             overcharges: 0,
             criticalStarts: 0,
@@ -964,8 +1441,9 @@ user_id,event_type,percentage,date,time,timezone
         }
 
         // --- SIMULATION & PARSING LOGIC ---
-        function runSimulation() {
-            const rawCsv = document.getElementById("csv-input").value;
+        function runSimulation(csvInputId) {
+            csvInputId = csvInputId || 'csv-input';
+            const rawCsv = document.getElementById(csvInputId).value;
             const lines = rawCsv.trim().split("\n");
             if (lines.length < 2) return;
 
@@ -1018,6 +1496,8 @@ user_id,event_type,percentage,date,time,timezone
             xp = 0;
             currentRankIndex = 0;
             weeklyStats = {};
+            dailyData = {};
+            currentHeatmapMode = 'score';
             globalMetrics = {
                 overcharges: 0,
                 criticalStarts: 0,
@@ -1093,6 +1573,36 @@ user_id,event_type,percentage,date,time,timezone
                 if (isCriticalStart) weeklyStats[weekKey].crit++;
                 if (isPerfectCharge) weeklyStats[weekKey].perf++;
 
+                // --- Daily Data for Heatmap ---
+                const dayKey = s.startDate;
+                if (!dailyData[dayKey]) {
+                    dailyData[dayKey] = {
+                        date: dayKey,
+                        sessions: 0,
+                        overcharges: 0,
+                        perfects: 0,
+                        criticals: 0,
+                        totalScore: 0,
+                        types: [],
+                    };
+                }
+                dailyData[dayKey].sessions++;
+                if (isOvercharge) dailyData[dayKey].overcharges++;
+                if (isPerfectCharge) dailyData[dayKey].perfects++;
+                if (isCriticalStart) dailyData[dayKey].criticals++;
+
+                // Compute a simple session score: perfect=100, good=70, critical=30, overcharge=10
+                let sessionScore = 70; // default ok
+                if (isPerfectCharge) sessionScore = 100;
+                else if (isCriticalStart) sessionScore = 30;
+                else if (isOvercharge) sessionScore = 10;
+                dailyData[dayKey].totalScore += sessionScore;
+                dailyData[dayKey].types.push(
+                    isOvercharge ? 'overcharge' :
+                    isCriticalStart ? 'critical' :
+                    isPerfectCharge ? 'perfect' : 'ok'
+                );
+
                 globalMetrics.totalXpEarned += xpDelta;
 
                 hp = Math.min(100, Math.max(0, hp + hpDelta));
@@ -1102,6 +1612,12 @@ user_id,event_type,percentage,date,time,timezone
                     xp -= 100;
                 }
                 if (currentRankIndex >= 19) xp = 100;
+
+                // Snapshot cumulative state at end of this day (overwrites if multiple sessions same day)
+                dailyData[dayKey].hpAtEndOfDay = hp;
+                dailyData[dayKey].rankAtEndOfDay = currentRankIndex;
+                dailyData[dayKey].xpAtEndOfDay = xp;
+                dailyData[dayKey].rankName = ranks[currentRankIndex].name;
 
                 const card = document.createElement("div");
                 card.className = `${colorTheme} border-thick rounded-xl p-3 flex justify-between items-center shadow-hard-sm opacity-0 transform translate-y-4 transition-all duration-500 shrink-0`;
@@ -1141,12 +1657,20 @@ user_id,event_type,percentage,date,time,timezone
                         -80,
                     );
                     renderStatsView(diffWeeks);
+                    renderHeatmap(currentHeatmapMode);
+                    document.getElementById('heatmap-section').classList.remove('hidden');
+                    // Reset toggle buttons visual state
+                    document.querySelectorAll('.heatmap-toggle-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.mode === currentHeatmapMode);
+                    });
                     switchTab("tab-stats"); // Auto switch to stats after simulation to show off the Journey map
                 },
                 sessions.length * 80 + 500,
             );
 
             document.getElementById("csv-input").classList.add("hidden");
+            document.getElementById("csv-input-2").classList.add("hidden");
+            document.getElementById("csv-input-3").classList.add("hidden");
         }
 
         // --- STATS LOGIC (Duolingo/Angry Birds Map) ---
@@ -1239,6 +1763,339 @@ user_id,event_type,percentage,date,time,timezone
                 journeyPath.appendChild(node);
             });
         }
+
+        // --- HEATMAP LOGIC ---
+        function switchHeatmapMode(mode) {
+            currentHeatmapMode = mode;
+            document.querySelectorAll('.heatmap-toggle-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.mode === mode);
+            });
+            renderHeatmap(mode);
+        }
+
+        function getHeatmapColor(dayInfo, mode) {
+            if (!dayInfo) return '#9CA3AF'; // gray — no data
+
+            if (mode === 'sessions') {
+                const count = dayInfo.sessions;
+                if (count === 0) return '#9CA3AF';
+                if (count === 1) return '#F9A215';
+                if (count === 2) return '#81B29A';
+                return '#FACC15'; // 3+
+            }
+
+            if (mode === 'quality') {
+                // Worst quality determines color
+                if (dayInfo.overcharges > 0) return '#E07A5F';
+                if (dayInfo.criticals > 0) return '#F9A215';
+                if (dayInfo.perfects === dayInfo.sessions) return '#FACC15';
+                return '#81B29A';
+            }
+
+            // mode === 'score' (default)
+            const avg = dayInfo.totalScore / dayInfo.sessions;
+            if (avg >= 90) return '#FACC15';   // perfect
+            if (avg >= 65) return '#81B29A';   // good
+            if (avg >= 40) return '#F9A215';   // okay
+            return '#E07A5F';                  // bad
+        }
+
+        function renderHeatmap(mode) {
+            const grid = document.getElementById('heatmap-grid');
+            const summaryEl = document.getElementById('heatmap-summary');
+            grid.innerHTML = '';
+
+            const dateKeys = Object.keys(dailyData).sort();
+            if (dateKeys.length === 0) return;
+
+            // Determine full calendar range (first date to last date)
+            const firstDate = new Date(dateKeys[0] + 'T00:00:00');
+            const lastDate = new Date(dateKeys[dateKeys.length - 1] + 'T00:00:00');
+
+            // Adjust firstDate back to Monday
+            const firstDow = firstDate.getDay(); // 0=Sun, 1=Mon...
+            const mondayOffset = firstDow === 0 ? -6 : 1 - firstDow;
+            const startMonday = new Date(firstDate);
+            startMonday.setDate(startMonday.getDate() + mondayOffset);
+
+            // Build list of all days from startMonday to lastDate
+            const allDays = [];
+            const cursor = new Date(startMonday);
+            while (cursor <= lastDate) {
+                allDays.push(new Date(cursor));
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            // Pad to complete the last week (fill to Sunday)
+            while (allDays.length % 7 !== 0) {
+                allDays.push(new Date(cursor));
+                cursor.setDate(cursor.getDate() + 1);
+            }
+
+            // Group into weeks (rows)
+            const weeks = [];
+            for (let i = 0; i < allDays.length; i += 7) {
+                weeks.push(allDays.slice(i, i + 7));
+            }
+
+            // Header row: empty corner + day labels
+            const dayLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+            const cornerEl = document.createElement('div');
+            grid.appendChild(cornerEl); // empty top-left corner
+            dayLabels.forEach(label => {
+                const el = document.createElement('div');
+                el.className = 'heatmap-day-label';
+                el.textContent = label;
+                grid.appendChild(el);
+            });
+
+            // Render each week row
+            weeks.forEach((week, weekIdx) => {
+                // Week label
+                const weekLabel = document.createElement('div');
+                weekLabel.className = 'heatmap-week-label';
+                // Show month label if first week or month changes
+                const monthStr = week[0].toLocaleDateString('en-US', { month: 'short' });
+                const prevMonthStr = weekIdx > 0
+                    ? weeks[weekIdx - 1][0].toLocaleDateString('en-US', { month: 'short' })
+                    : '';
+                weekLabel.textContent = (weekIdx === 0 || monthStr !== prevMonthStr) ? monthStr : '';
+                grid.appendChild(weekLabel);
+
+                // 7 day cells
+                week.forEach(day => {
+                    const dateStr = day.toISOString().split('T')[0];
+                    const dayInfo = dailyData[dateStr];
+                    const cell = document.createElement('div');
+                    cell.className = 'heatmap-cell';
+
+                    const color = dayInfo ? getHeatmapColor(dayInfo, mode) : '#E8E5D1';
+                    cell.style.backgroundColor = color;
+
+                    // Dim border for empty days
+                    if (!dayInfo) {
+                        cell.style.borderColor = '#d1cbb8';
+                        cell.style.cursor = 'default';
+                    }
+
+                    if (dayInfo) {
+                        cell.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            showHeatmapPopover(cell, dayInfo, mode);
+                        });
+                    }
+
+                    grid.appendChild(cell);
+                });
+            });
+
+            // Summary text
+            const totalDays = dateKeys.length;
+            summaryEl.textContent = `${totalDays} active day${totalDays !== 1 ? 's' : ''} · ${globalMetrics.total} sessions`;
+        }
+
+        let activePopover = null;
+        let savedPetState = null; // stores the pet state before heatmap cell tap
+
+        // Caveman-style day comments based on charging quality
+        const dayComments = {
+            perfect: [
+                "Me remember this day! You charge good, me belly full!",
+                "This day me so happy! 20 to 80, perfect!",
+                "Me dance this day! You best human!",
+                "Good day! Me strong like ox! You charge right!",
+                "Me purr all day! You finally learn!",
+            ],
+            good: [
+                "This day okay. Me not complain. Could be better though.",
+                "Me feel decent this day. You try, me see that.",
+                "Not bad day! Me have enough food. Me content.",
+                "This day me nap peacefully. You charge okay.",
+                "Me remember... was fine day. Me survive!",
+            ],
+            bad: [
+                "This day you BURN me! Too much charge, me hurt!",
+                "Ugh! Me remember pain! You overcharge, me suffer!",
+                "Bad day! You plug all night, me belly explode!",
+                "Me cry this day! Why you do 100%?! WHY?!",
+                "This day me feel fire inside! Stop overcharge!",
+            ],
+            critical: [
+                "Me STARVE this day! You let battery die!",
+                "This day me almost gone! You forget me exist?!",
+                "Me so hungry this day... me see darkness...",
+                "You let me drop to nothing! Me weak, me scared!",
+                "This day me beg for food. You no listen!",
+            ],
+            mixed: [
+                "This day confusing! Sometimes good, sometimes you hurt me!",
+                "Me not know how feel this day. Up and down!",
+                "Weird day! You charge good then burn me. Make up mind!",
+                "This day give me headache. Good then bad then good...",
+                "Me dizzy this day! You all over the place!",
+            ],
+        };
+
+        function getDayPetState(dayInfo) {
+            const avg = dayInfo.totalScore / dayInfo.sessions;
+            if (avg >= 80) return 'thriving';
+            if (avg >= 50) return 'tired';
+            return 'sick';
+        }
+
+        function getDayComment(dayInfo) {
+            let category;
+            if (dayInfo.overcharges > 0 && dayInfo.perfects > 0) {
+                category = 'mixed';
+            } else if (dayInfo.overcharges > 0) {
+                category = 'bad';
+            } else if (dayInfo.criticals > 0) {
+                category = 'critical';
+            } else if (dayInfo.perfects === dayInfo.sessions) {
+                category = 'perfect';
+            } else {
+                category = 'good';
+            }
+            const pool = dayComments[category];
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function showHeatmapPopover(cell, dayInfo, mode) {
+            dismissHeatmapPopover();
+
+            // Save current pet state before overriding
+            if (!savedPetState) {
+                savedPetState = {
+                    hp: hp,
+                    xp: xp,
+                    rankIndex: currentRankIndex,
+                    healthState: hp > 60 ? 'thriving' : hp > 30 ? 'tired' : 'sick',
+                };
+            }
+
+            const popover = document.createElement('div');
+            popover.className = 'heatmap-popover';
+            popover.id = 'heatmap-active-popover';
+
+            const dateObj = new Date(dayInfo.date + 'T00:00:00');
+            const dateFormatted = dateObj.toLocaleDateString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric'
+            });
+
+            const avg = Math.round(dayInfo.totalScore / dayInfo.sessions);
+            const dayRankName = dayInfo.rankName || ranks[0].name;
+            const dayRankId = dayInfo.rankAtEndOfDay !== undefined ? dayInfo.rankAtEndOfDay + 1 : 1;
+
+            // Build type summary
+            let typeSummary = '';
+            if (dayInfo.perfects > 0) typeSummary += `<span style="color:#065f46;">✦ ${dayInfo.perfects} perfect</span> `;
+            if (dayInfo.overcharges > 0) typeSummary += `<span style="color:#dc2626;">⚠ ${dayInfo.overcharges} overcharge</span> `;
+            if (dayInfo.criticals > 0) typeSummary += `<span style="color:#c2410c;">▼ ${dayInfo.criticals} critical</span> `;
+            const okCount = dayInfo.sessions - dayInfo.perfects - dayInfo.overcharges - dayInfo.criticals;
+            if (okCount > 0) typeSummary += `<span style="color:#3d405b;">● ${okCount} standard</span>`;
+
+            popover.innerHTML = `
+                <div style="font-weight:700;font-size:12px;color:#3d405b;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em;">${dateFormatted}</div>
+                <div style="font-size:11px;color:#3d405b;margin-bottom:6px;">
+                    <span style="font-weight:800;font-size:16px;color:#f9a215;">${dayInfo.sessions}</span>
+                    <span style="font-weight:600;opacity:0.7;"> session${dayInfo.sessions !== 1 ? 's' : ''}</span>
+                    ${mode === 'score' ? `<span style="margin-left:6px;font-weight:800;font-size:16px;color:${getHeatmapColor(dayInfo, 'score')};">${avg}</span><span style="font-weight:600;opacity:0.7;"> avg score</span>` : ''}
+                </div>
+                <div style="font-size:10px;font-weight:600;display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">${typeSummary}</div>
+                <div style="font-size:10px;font-weight:700;color:#3d405b;border-top:2px solid #3d405b20;padding-top:5px;display:flex;justify-content:space-between;align-items:center;">
+                    <span>⚔ Rank ${dayRankId}: ${dayRankName}</span>
+                    <span style="color:${dayInfo.hpAtEndOfDay > 60 ? '#81B29A' : dayInfo.hpAtEndOfDay > 30 ? '#F9A215' : '#E07A5F'};">${dayInfo.hpAtEndOfDay !== undefined ? dayInfo.hpAtEndOfDay : '?'} HP</span>
+                </div>
+            `;
+
+            document.body.appendChild(popover);
+            activePopover = popover;
+
+            // Position the popover
+            const cellRect = cell.getBoundingClientRect();
+            const popoverRect = popover.getBoundingClientRect();
+
+            let left = cellRect.left + cellRect.width / 2 - popoverRect.width / 2;
+            let top = cellRect.top - popoverRect.height - 8;
+
+            // Keep within viewport
+            if (left < 8) left = 8;
+            if (left + popoverRect.width > window.innerWidth - 8) {
+                left = window.innerWidth - popoverRect.width - 8;
+            }
+            if (top < 8) {
+                top = cellRect.bottom + 8; // flip below
+            }
+
+            popover.style.left = `${left}px`;
+            popover.style.top = `${top}px`;
+
+            // --- Pet reacts to this day's data ---
+            const dayState = getDayPetState(dayInfo);
+            forceHealthState(dayState);
+
+            // Set global hp/xp to this day's values BEFORE calling setRank,
+            // because setRank() -> updateUI() reads these globals to render bars
+            if (dayInfo.hpAtEndOfDay !== undefined) {
+                hp = dayInfo.hpAtEndOfDay;
+            }
+            if (dayInfo.xpAtEndOfDay !== undefined) {
+                xp = dayInfo.xpAtEndOfDay;
+            }
+
+            // Update rank/equipment to this day's rank (this also updates HP/XP bars via updateUI)
+            if (dayInfo.rankAtEndOfDay !== undefined) {
+                setRank(dayInfo.rankAtEndOfDay);
+            } else {
+                updateUI();
+            }
+
+            // Show speech bubble with day-specific comment
+            const bubble = document.getElementById('speech-bubble');
+            const comment = getDayComment(dayInfo);
+            bubble.innerText = `"${comment}"`;
+            bubble.classList.remove('hidden');
+            bubble.classList.add('animate-bounce-up');
+            setTimeout(() => bubble.classList.remove('animate-bounce-up'), 500);
+
+            // Trigger pet animation based on state
+            if (dayState === 'sick') {
+                catContainer.classList.add('animate-shake');
+                setTimeout(() => catContainer.classList.remove('animate-shake'), 400);
+            } else if (dayState === 'thriving') {
+                catContainer.classList.add('animate-bounce-up');
+                setTimeout(() => catContainer.classList.remove('animate-bounce-up'), 500);
+            }
+        }
+
+        function dismissHeatmapPopover() {
+            if (activePopover) {
+                activePopover.remove();
+                activePopover = null;
+            }
+
+            // Restore pet to its simulation-final state
+            if (savedPetState) {
+                forceHealthState(savedPetState.healthState);
+
+                // Restore globals BEFORE calling setRank, since setRank -> updateUI reads them
+                hp = savedPetState.hp;
+                xp = savedPetState.xp;
+
+                // Restore rank/equipment (this also updates HP/XP bars via updateUI)
+                setRank(savedPetState.rankIndex);
+
+                const bubble = document.getElementById('speech-bubble');
+                bubble.classList.add('hidden');
+                savedPetState = null;
+            }
+        }
+
+        // Dismiss popover on tap outside
+        document.addEventListener('click', (e) => {
+            if (activePopover && !e.target.closest('.heatmap-cell') && !e.target.closest('.heatmap-popover')) {
+                dismissHeatmapPopover();
+            }
+        });
 
         function formatDateShort(dateStr) {
             const d = new Date(dateStr);
@@ -1426,6 +2283,12 @@ user_id,event_type,percentage,date,time,timezone
                     e.target.result;
                 document
                     .getElementById("csv-input")
+                    .classList.remove("hidden");
+                document
+                    .getElementById("csv-input-2")
+                    .classList.remove("hidden");
+                document
+                    .getElementById("csv-input-3")
                     .classList.remove("hidden");
                 document
                     .getElementById("timeline-container")
